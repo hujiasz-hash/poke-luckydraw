@@ -1,0 +1,1750 @@
+/* 
+   ==========================================================================
+   宝可梦随机奖励抽签小游戏 - 核心样式表
+   作者: Antigravity
+   设计风格: 高端极简宝可梦主题, 玻璃魔幻质感, 动感 3D 卡牌与精灵球
+   ========================================================================== 
+*/
+
+:root {
+    --primary-color: #ff1c1c;      /* 精灵球红 */
+    --primary-light: #ff4d4d;
+    --primary-dark: #cc0000;
+    --secondary-color: #fcd705;    /* 皮卡丘黄 */
+    --secondary-dark: #d8b800;
+    --dark-color: #2b2b2b;         /* 精灵球黑/高级球黑 */
+    --light-color: #f4f6f9;        /* 亮灰 */
+    --white: #ffffff;
+    --success-color: #4caf50;
+    --danger-color: #f44336;
+    
+    /* 玻璃卡片通用变量 */
+    --card-bg: rgba(255, 255, 255, 0.08);
+    --card-border: rgba(255, 255, 255, 0.15);
+    --card-shadow: 0 20px 40px rgba(0, 0, 0, 0.3), 
+                   inset 0 1px 0 rgba(255, 255, 255, 0.2);
+    --font-main: 'Comfortaa', 'Noto Sans SC', sans-serif;
+}
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    font-family: var(--font-main);
+    background: linear-gradient(135deg, #101525 0%, #1e1b4b 50%, #0f172a 100%);
+    color: var(--white);
+    min-height: 100vh;
+    overflow-x: hidden;
+    position: relative;
+}
+
+/* 装饰性背景泡泡 */
+.bg-decorations {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    top: 0;
+    left: 0;
+    pointer-events: none;
+    z-index: 0;
+    overflow: hidden;
+}
+
+.bubble {
+    position: absolute;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(253, 215, 5, 0.1) 0%, rgba(255, 28, 28, 0.05) 70%, transparent 100%);
+    filter: blur(20px);
+    animation: float-slow 15s infinite ease-in-out;
+}
+
+.bubble-1 {
+    width: 400px;
+    height: 400px;
+    top: -100px;
+    left: -100px;
+}
+
+.bubble-2 {
+    width: 500px;
+    height: 500px;
+    bottom: -150px;
+    right: -100px;
+    animation-delay: -5s;
+    background: radial-gradient(circle, rgba(76, 175, 80, 0.08) 0%, rgba(30, 27, 75, 0.1) 70%, transparent 100%);
+}
+
+.bubble-3 {
+    width: 300px;
+    height: 300px;
+    top: 40%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    animation-delay: -2s;
+    background: radial-gradient(circle, rgba(255, 255, 255, 0.05) 0%, transparent 80%);
+}
+
+@keyframes float-slow {
+    0%, 100% {
+        transform: translateY(0) rotate(0deg) scale(1);
+    }
+    50% {
+        transform: translateY(-30px) rotate(180deg) scale(1.1);
+    }
+}
+
+/* 容器布局 */
+.app-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 30px 20px;
+    position: relative;
+    z-index: 1;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+}
+
+/* Header */
+.app-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 40px;
+    position: relative;
+}
+
+.logo-area {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.logo-icon {
+    font-size: 2.2rem;
+    color: var(--primary-color);
+    filter: drop-shadow(0 0 10px rgba(255, 28, 28, 0.6));
+    animation: pulse-glow 2s infinite ease-in-out;
+}
+
+.logo-area h1 {
+    font-size: 2rem;
+    font-weight: 900;
+    letter-spacing: 2px;
+    background: linear-gradient(to right, var(--white) 60%, var(--secondary-color) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+.logo-area h1 span {
+    font-size: 1.2rem;
+    font-weight: 400;
+    margin-left: 8px;
+    color: rgba(255, 255, 255, 0.7);
+    -webkit-text-fill-color: rgba(255, 255, 255, 0.7);
+    padding: 2px 8px;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 20px;
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.subtitle {
+    position: absolute;
+    bottom: -22px;
+    left: 45px;
+    font-size: 0.9rem;
+    color: rgba(255, 255, 255, 0.6);
+}
+
+/* 通用玻璃卡片样式 */
+.card {
+    background: var(--card-bg);
+    border: 1px solid var(--card-border);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border-radius: 24px;
+    padding: 30px;
+    box-shadow: var(--card-shadow);
+    transition: transform 0.3s cubic-bezier(0.25, 0.8, 0.25, 1), box-shadow 0.3s ease;
+}
+
+.card:hover {
+    box-shadow: 0 30px 60px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.3);
+}
+
+/* 主网格布局 */
+.main-grid {
+    display: grid;
+    grid-template-columns: 1.2fr 1fr;
+    gap: 30px;
+    margin-bottom: 40px;
+    align-items: start;
+}
+
+.section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 25px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    padding-bottom: 15px;
+}
+
+.section-header h2 {
+    font-size: 1.4rem;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    color: var(--white);
+}
+
+.section-header h2 i {
+    color: var(--secondary-color);
+}
+
+/* Left Side: Draw Section */
+.draw-section {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-height: 480px;
+    justify-content: space-between;
+}
+
+/* 3D PokeBall Design */
+.pokeball-container {
+    position: relative;
+    width: 100%;
+    height: 280px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    perspective: 1000px;
+}
+
+.pokeball-wrapper {
+    position: relative;
+    width: 180px;
+    height: 180px;
+    transform-style: preserve-3d;
+}
+
+.pokeball {
+    width: 180px;
+    height: 180px;
+    border-radius: 50%;
+    border: 8px solid var(--dark-color);
+    position: relative;
+    overflow: hidden;
+    box-shadow: inset -15px -15px 0 rgba(0, 0, 0, 0.15), 0 15px 30px rgba(0, 0, 0, 0.4);
+    background: var(--white);
+    transform-origin: center bottom;
+    transition: transform 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+/* PokeBall Top Half (Red) */
+.pokeball-top {
+    position: absolute;
+    width: 100%;
+    height: 50%;
+    top: 0;
+    left: 0;
+    background: radial-gradient(circle at 50% 120%, #ff5252 0%, var(--primary-color) 60%, #b30000 100%);
+}
+
+/* PokeBall Bottom Half (White) */
+.pokeball-bottom {
+    position: absolute;
+    width: 100%;
+    height: 50%;
+    bottom: 0;
+    left: 0;
+    background: radial-gradient(circle at 50% -20%, var(--white) 30%, #e0e0e0 80%, #b5b5b5 100%);
+}
+
+/* Middle black band */
+.pokeball-band {
+    position: absolute;
+    width: 100%;
+    height: 16px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: var(--dark-color);
+    z-index: 2;
+}
+
+/* Center release button */
+.pokeball-button {
+    position: absolute;
+    width: 54px;
+    height: 54px;
+    background: var(--dark-color);
+    border-radius: 50%;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 3;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+}
+
+.pokeball-button-inner {
+    width: 32px;
+    height: 32px;
+    background: var(--white);
+    border: 4px solid var(--dark-color);
+    border-radius: 50%;
+    box-shadow: inset 0 2px 4px rgba(0,0,0,0.1);
+    cursor: pointer;
+    transition: background-color 0.3s, box-shadow 0.3s;
+}
+
+/* Button pulsing green/white ready light */
+.pokeball-button-inner::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 14px;
+    height: 14px;
+    background-color: #81c784;
+    border-radius: 50%;
+    box-shadow: 0 0 8px #81c784;
+    animation: button-glow-ready 2s infinite ease-in-out;
+}
+
+/* Ready glow */
+@keyframes button-glow-ready {
+    0%, 100% {
+        opacity: 0.5;
+        box-shadow: 0 0 4px #81c784;
+    }
+    50% {
+        opacity: 1;
+        box-shadow: 0 0 12px #81c784, 0 0 20px #81c784;
+    }
+}
+
+/* Flash Red during shake */
+.pokeball.shaking .pokeball-button-inner::after {
+    background-color: var(--primary-color);
+    box-shadow: 0 0 12px var(--primary-color);
+    animation: button-flash-red 0.2s infinite alternate;
+}
+
+@keyframes button-flash-red {
+    from { opacity: 0.3; }
+    to { opacity: 1; box-shadow: 0 0 16px var(--primary-color); }
+}
+
+/* Ball Shadow */
+.pokeball-shadow {
+    position: absolute;
+    width: 140px;
+    height: 16px;
+    background: rgba(0, 0, 0, 0.4);
+    border-radius: 50%;
+    bottom: -15px;
+    left: 20px;
+    filter: blur(5px);
+    transition: transform 0.5s;
+}
+
+/* 3D hover effect */
+.pokeball-wrapper:hover .pokeball {
+    transform: translateY(-8px) rotateX(10deg);
+}
+.pokeball-wrapper:hover .pokeball-shadow {
+    transform: scale(0.9);
+    background: rgba(0, 0, 0, 0.5);
+}
+
+/* Pokeball Animations */
+/* 1. Shaking Animation (Lottery Draw in Progress) */
+.pokeball.shaking {
+    animation: shake-ball 0.8s cubic-bezier(.36,.07,.19,.97) 3;
+}
+
+@keyframes shake-ball {
+    0%, 100% { transform: translate(0, 0) rotate(0); }
+    15% { transform: translate(-8px, 0) rotate(-15deg); }
+    30% { transform: translate(6px, 0) rotate(12deg); }
+    45% { transform: translate(-6px, 0) rotate(-10deg); }
+    60% { transform: translate(4px, 0) rotate(8deg); }
+    75% { transform: translate(-2px, 0) rotate(-4deg); }
+    90% { transform: translate(1px, 0) rotate(2deg); }
+}
+
+/* 2. Opening Animation (Split Top and Bottom halves) */
+.pokeball.opening {
+    animation: open-ball 0.8s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+}
+
+@keyframes open-ball {
+    0% { transform: scale(1) translateY(0); }
+    20% { transform: scale(1.1) translateY(-20px) rotate(0); }
+    50% { transform: scale(1.1) translateY(-20px); filter: brightness(1.5); }
+    100% { transform: scale(0) translateY(-100px); opacity: 0; }
+}
+
+/* Control Area */
+.control-area {
+    width: 100%;
+    text-align: center;
+    margin-top: 20px;
+}
+
+.status-text {
+    font-size: 0.9rem;
+    color: rgba(255, 255, 255, 0.55);
+    margin-top: 12px;
+}
+
+/* Buttons styling */
+.btn {
+    font-family: var(--font-main);
+    border: none;
+    border-radius: 30px;
+    cursor: pointer;
+    font-weight: 700;
+    transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    outline: none;
+}
+
+.btn-primary {
+    background: linear-gradient(135deg, var(--primary-color) 0%, #ff4d4d 100%);
+    color: var(--white);
+    box-shadow: 0 10px 20px rgba(255, 28, 28, 0.3), 
+                inset 0 1px 0 rgba(255, 255, 255, 0.3);
+}
+
+.btn-primary:hover:not(:disabled) {
+    transform: translateY(-3px);
+    box-shadow: 0 15px 25px rgba(255, 28, 28, 0.4), 
+                inset 0 1px 0 rgba(255, 255, 255, 0.4);
+    filter: brightness(1.1);
+}
+
+.btn-primary:active:not(:disabled) {
+    transform: translateY(-1px);
+}
+
+.btn-large {
+    padding: 18px 40px;
+    font-size: 1.15rem;
+    border-radius: 50px;
+    position: relative;
+    overflow: hidden;
+}
+
+.btn-large .btn-shine {
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 50%;
+    height: 100%;
+    background: linear-gradient(
+        to right,
+        rgba(255, 255, 255, 0) 0%,
+        rgba(255, 255, 255, 0.3) 50%,
+        rgba(255, 255, 255, 0) 100%
+    );
+    transform: skewX(-25deg);
+    transition: 0.75s;
+}
+
+.btn-large:hover .btn-shine {
+    left: 150%;
+}
+
+.btn-outline {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    color: var(--white);
+}
+
+.btn-outline:hover {
+    background: rgba(255, 255, 255, 0.15);
+    border-color: rgba(255, 255, 255, 0.3);
+    transform: translateY(-2px);
+}
+
+.btn-danger {
+    background: linear-gradient(135deg, #e53935 0%, #b71c1c 100%);
+    color: var(--white);
+    box-shadow: 0 8px 16px rgba(229, 57, 53, 0.2);
+}
+
+.btn-danger:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 12px 20px rgba(229, 57, 53, 0.3);
+    filter: brightness(1.15);
+}
+
+.btn-sm {
+    padding: 8px 16px;
+    font-size: 0.85rem;
+    border-radius: 16px;
+}
+
+.btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none !important;
+    box-shadow: none !important;
+}
+
+.icon-btn {
+    background: rgba(255, 255, 255, 0.07);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    color: rgba(255, 255, 255, 0.85);
+    border-radius: 50%;
+    width: 44px;
+    height: 44px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    cursor: pointer;
+    font-size: 1.1rem;
+    transition: all 0.3s;
+}
+
+.icon-btn:hover {
+    background: var(--secondary-color);
+    color: var(--dark-color);
+    border-color: var(--secondary-color);
+    transform: scale(1.1) rotate(15deg);
+    box-shadow: 0 0 15px rgba(252, 215, 5, 0.5);
+}
+
+/* Badge count indicator */
+.badge {
+    background: var(--secondary-color);
+    color: var(--dark-color);
+    font-size: 0.75rem;
+    font-weight: 700;
+    padding: 4px 10px;
+    border-radius: 20px;
+    box-shadow: 0 2px 8px rgba(252, 215, 5, 0.3);
+}
+
+/* Right Side: Records Section */
+.records-section {
+    display: flex;
+    flex-direction: column;
+    min-height: 480px;
+    max-height: 580px;
+}
+
+.records-list-wrapper {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+/* Bulk Selection Panel */
+.list-actions {
+    display: flex;
+    gap: 10px;
+    padding: 10px;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 12px;
+    margin-bottom: 12px;
+    align-items: center;
+    animation: slide-down 0.3s ease;
+}
+
+@keyframes slide-down {
+    from { opacity: 0; transform: translateY(-10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.records-list {
+    flex: 1;
+    overflow-y: auto;
+    padding-right: 5px;
+}
+
+/* Scrollbar customization */
+.records-list::-webkit-scrollbar,
+#rewards-textarea::-webkit-scrollbar {
+    width: 6px;
+}
+
+.records-list::-webkit-scrollbar-track,
+#rewards-textarea::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.02);
+    border-radius: 10px;
+}
+
+.records-list::-webkit-scrollbar-thumb,
+#rewards-textarea::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.15);
+    border-radius: 10px;
+}
+
+.records-list::-webkit-scrollbar-thumb:hover,
+#rewards-textarea::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.3);
+}
+
+/* Empty State Card */
+.empty-state {
+    text-align: center;
+    padding: 60px 20px;
+    color: rgba(255, 255, 255, 0.4);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 15px;
+}
+
+.empty-img {
+    width: 100px;
+    height: 100px;
+    opacity: 0.3;
+    filter: grayscale(1);
+    transition: opacity 0.5s, filter 0.5s;
+    animation: bounce 3s infinite ease-in-out;
+}
+
+.empty-state:hover .empty-img {
+    opacity: 0.8;
+    filter: grayscale(0);
+}
+
+@keyframes bounce {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-10px); }
+}
+
+/* Record Item Row */
+.record-item {
+    display: flex;
+    align-items: center;
+    padding: 14px 18px;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: 16px;
+    margin-bottom: 10px;
+    cursor: pointer;
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    overflow: hidden;
+}
+
+.record-item:hover {
+    background: rgba(255, 255, 255, 0.08);
+    border-color: rgba(255, 255, 255, 0.15);
+    transform: translateX(3px);
+}
+
+.record-item.checked {
+    background: rgba(76, 175, 80, 0.12);
+    border-color: rgba(76, 175, 80, 0.3);
+}
+
+/* Custom Checkbox Design */
+.checkbox-container {
+    position: relative;
+    width: 20px;
+    height: 20px;
+    margin-right: 15px;
+}
+
+.checkbox-container input {
+    position: absolute;
+    opacity: 0;
+    cursor: pointer;
+    height: 0;
+    width: 0;
+}
+
+.checkmark {
+    position: absolute;
+    top: 0;
+    left: 0;
+    height: 20px;
+    width: 20px;
+    background-color: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    border-radius: 6px;
+    transition: all 0.2s;
+}
+
+.checkbox-container:hover input ~ .checkmark {
+    background-color: rgba(255, 255, 255, 0.2);
+}
+
+.checkbox-container input:checked ~ .checkmark {
+    background-color: var(--success-color);
+    border-color: var(--success-color);
+}
+
+.checkmark:after {
+    content: "";
+    position: absolute;
+    display: none;
+}
+
+.checkbox-container input:checked ~ .checkmark:after {
+    display: block;
+}
+
+.checkbox-container .checkmark:after {
+    left: 6px;
+    top: 2px;
+    width: 5px;
+    height: 10px;
+    border: solid white;
+    border-width: 0 2px 2px 0;
+    transform: rotate(45deg);
+}
+
+.record-info {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.record-time {
+    font-size: 0.75rem;
+    color: rgba(255, 255, 255, 0.4);
+}
+
+.record-reward {
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: rgba(255, 255, 255, 0.95);
+}
+
+/* Record Item deletion fade-out animation */
+.record-item.removing {
+    animation: fade-out-left 0.4s ease forwards;
+}
+
+@keyframes fade-out-left {
+    to {
+        opacity: 0;
+        transform: translateX(-50px);
+        max-height: 0;
+        padding-top: 0;
+        padding-bottom: 0;
+        margin-bottom: 0;
+        border-width: 0;
+    }
+}
+
+/* Modal overlays (General) */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(10, 12, 22, 0.85);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    z-index: 100;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s ease;
+}
+
+.modal-overlay.open {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+/* Dev Modal Layout */
+.modal {
+    width: 90%;
+    max-width: 600px;
+    z-index: 101;
+}
+
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-bottom: 18px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    margin-bottom: 20px;
+}
+
+.modal-header h2 {
+    font-size: 1.3rem;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.close-modal-btn {
+    background: transparent;
+    border: none;
+    color: rgba(255, 255, 255, 0.5);
+    font-size: 1.4rem;
+    cursor: pointer;
+    transition: color 0.2s;
+}
+
+.close-modal-btn:hover {
+    color: var(--white);
+}
+
+/* Tabs */
+.tab-header {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 20px;
+    background: rgba(255, 255, 255, 0.03);
+    padding: 5px;
+    border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.tab-btn {
+    flex: 1;
+    background: transparent;
+    border: none;
+    padding: 10px;
+    border-radius: 8px;
+    color: rgba(255, 255, 255, 0.6);
+    cursor: pointer;
+    font-family: var(--font-main);
+    font-weight: 700;
+    font-size: 0.9rem;
+    transition: all 0.2s;
+}
+
+.tab-btn.active {
+    background: var(--white);
+    color: var(--dark-color);
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+}
+
+.tab-content {
+    display: none;
+}
+
+.tab-content.active {
+    display: block;
+    animation: fadeIn 0.4s ease;
+}
+
+.section-desc {
+    font-size: 0.85rem;
+    color: rgba(255, 255, 255, 0.5);
+    line-height: 1.5;
+    margin-bottom: 18px;
+}
+
+/* Form Styles */
+.form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 20px;
+}
+
+.form-group label {
+    font-size: 0.9rem;
+    font-weight: 700;
+    color: rgba(255, 255, 255, 0.85);
+}
+
+#rewards-textarea {
+    width: 100%;
+    background: rgba(0, 0, 0, 0.25);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 12px;
+    padding: 12px 15px;
+    color: var(--white);
+    font-family: var(--font-main);
+    font-size: 0.95rem;
+    line-height: 1.6;
+    resize: none;
+    outline: none;
+    transition: border-color 0.2s;
+}
+
+#rewards-textarea:focus,
+.form-group input:focus {
+    border-color: var(--secondary-color);
+    box-shadow: 0 0 10px rgba(252, 215, 5, 0.2);
+}
+
+.form-group input {
+    width: 100%;
+    background: rgba(0, 0, 0, 0.25);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 12px;
+    padding: 12px 15px;
+    color: var(--white);
+    font-family: var(--font-main);
+    font-size: 0.95rem;
+    outline: none;
+    transition: border-color 0.2s;
+}
+
+.pool-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+    margin-top: 10px;
+}
+
+/* Kid/Parent Numeric Lock Screen */
+.auth-card {
+    width: 320px;
+    padding: 30px;
+    text-align: center;
+}
+
+.auth-header {
+    margin-bottom: 20px;
+}
+
+.auth-icon {
+    font-size: 2.2rem;
+    color: var(--secondary-color);
+    margin-bottom: 12px;
+}
+
+.auth-header h3 {
+    font-size: 1.15rem;
+    font-weight: 700;
+    margin-bottom: 5px;
+}
+
+.auth-header p {
+    font-size: 0.8rem;
+    color: rgba(255, 255, 255, 0.5);
+}
+
+.pin-display {
+    display: flex;
+    justify-content: center;
+    gap: 15px;
+    margin-bottom: 25px;
+}
+
+.pin-dot {
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    transition: all 0.15s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.pin-dot.filled {
+    background-color: var(--secondary-color);
+    border-color: var(--secondary-color);
+    box-shadow: 0 0 10px var(--secondary-color);
+    transform: scale(1.2);
+}
+
+.keypad {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+}
+
+.key-btn {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: var(--white);
+    border-radius: 12px;
+    height: 52px;
+    font-size: 1.3rem;
+    font-weight: 700;
+    font-family: var(--font-main);
+    cursor: pointer;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    transition: all 0.15s;
+}
+
+.key-btn:hover {
+    background: rgba(255, 255, 255, 0.12);
+    border-color: rgba(255, 255, 255, 0.2);
+}
+
+.key-btn:active {
+    background: var(--secondary-color);
+    color: var(--dark-color);
+    transform: scale(0.95);
+}
+
+/* Pokemon Card Reveal Modal */
+.result-card-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 30px;
+    z-index: 102;
+    perspective: 1000px;
+}
+
+/* Holographic Card styles */
+.pokemon-card {
+    width: 320px;
+    height: 480px;
+    border-radius: 20px;
+    background: #0f0c1b;
+    padding: 16px;
+    box-shadow: 0 30px 60px rgba(0, 0, 0, 0.6), 
+                0 0 0 4px #b8860b, 
+                0 0 20px rgba(252, 215, 5, 0.4);
+    position: relative;
+    overflow: hidden;
+    transform-style: preserve-3d;
+}
+
+.card-inner {
+    width: 100%;
+    height: 100%;
+    border: 4px solid var(--secondary-color);
+    border-radius: 12px;
+    padding: 10px;
+    background: linear-gradient(135deg, #2a0845 0%, #6441a5 100%);
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    position: relative;
+}
+
+/* Card Header */
+.card-top-info {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 2px solid var(--secondary-color);
+    padding-bottom: 6px;
+    margin-bottom: 8px;
+}
+
+.card-type {
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: var(--secondary-color);
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.card-hp {
+    font-size: 0.85rem;
+    font-weight: 900;
+    color: #ff4d4d;
+}
+
+/* Pokemon image slot */
+.card-image-frame {
+    height: 180px;
+    border: 3px solid #b8860b;
+    background: radial-gradient(circle, #3e3b5e 0%, #1e1b30 100%);
+    border-radius: 8px;
+    overflow: hidden;
+    position: relative;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    box-shadow: inset 0 0 15px rgba(0,0,0,0.8);
+}
+
+.card-image-frame img {
+    height: 90%;
+    object-fit: contain;
+    filter: drop-shadow(0 10px 15px rgba(0, 0, 0, 0.5));
+    animation: pokemon-float 4s ease-in-out infinite;
+    z-index: 2;
+}
+
+.image-loader {
+    position: absolute;
+    color: rgba(255,255,255,0.6);
+    font-size: 0.85rem;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+@keyframes pokemon-float {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-8px); }
+}
+
+/* Card Reward Info Area */
+.card-reward-info {
+    flex: 1;
+    margin-top: 12px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    gap: 10px;
+}
+
+.reward-title-label {
+    font-size: 0.75rem;
+    color: var(--secondary-color);
+    text-transform: uppercase;
+    letter-spacing: 2px;
+}
+
+.reward-value-box {
+    width: 100%;
+    padding: 10px 15px;
+    background: rgba(0, 0, 0, 0.35);
+    border: 2px dashed rgba(252, 215, 5, 0.4);
+    border-radius: 8px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+#reward-result-value {
+    font-size: 1.25rem;
+    font-weight: 900;
+    color: var(--white);
+    text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+    line-height: 1.3;
+}
+
+.card-flavor-text {
+    font-size: 0.72rem;
+    color: rgba(255, 255, 255, 0.6);
+    line-height: 1.4;
+    font-style: italic;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    padding-top: 6px;
+    width: 100%;
+}
+
+.card-footer-info {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.6rem;
+    color: rgba(255, 255, 255, 0.4);
+    border-top: 1px dashed rgba(252, 215, 5, 0.3);
+    padding-top: 5px;
+    margin-top: 5px;
+}
+
+/* Card Glow / Rainbow overlay */
+.card-glow-effect {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 10;
+    background: linear-gradient(
+        125deg,
+        rgba(255, 0, 0, 0) 0%,
+        rgba(255, 0, 0, 0.05) 30%,
+        rgba(255, 255, 0, 0.1) 40%,
+        rgba(0, 255, 255, 0.1) 50%,
+        rgba(0, 0, 255, 0.05) 60%,
+        rgba(255, 0, 0, 0) 100%
+    );
+    background-size: 200% 200%;
+    mix-blend-mode: color-dodge;
+    animation: holo-sweep 6s linear infinite;
+}
+
+@keyframes holo-sweep {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+}
+
+/* Card Reveal Animations */
+.pokemon-card.animate-card-reveal {
+    animation: 3d-card-reveal 0.9s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+@keyframes 3d-card-reveal {
+    0% {
+        transform: scale(0.3) rotateY(180deg) rotateZ(-10deg) translateY(100px);
+        opacity: 0;
+    }
+    100% {
+        transform: scale(1) rotateY(0deg) rotateZ(0deg) translateY(0);
+        opacity: 1;
+    }
+}
+
+.animate-fade-in-delayed {
+    opacity: 0;
+    animation: fadeIn 0.4s ease 0.8s forwards;
+}
+
+/* Canvas Fireworks container */
+#canvas-container {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 5;
+}
+
+/* Global Transition classes */
+.animate-fade-in {
+    animation: fadeIn 0.8s ease forwards;
+}
+
+.animate-slide-up {
+    opacity: 0;
+    animation: slideUp 0.8s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+}
+
+.animate-scale-in {
+    transform: scale(0.85);
+    opacity: 0;
+    animation: scaleIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+@keyframes fadeIn {
+    to { opacity: 1; }
+}
+
+@keyframes slideUp {
+    from { transform: translateY(30px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+}
+
+@keyframes scaleIn {
+    to { transform: scale(1); opacity: 1; }
+}
+
+@keyframes pulse-glow {
+    0%, 100% { transform: scale(1); filter: drop-shadow(0 0 5px rgba(255, 28, 28, 0.5)); }
+    50% { transform: scale(1.05); filter: drop-shadow(0 0 15px rgba(255, 28, 28, 0.8)); }
+}
+
+/* Footer layout */
+.app-footer {
+    text-align: center;
+    padding: 10px 0 0 0;
+    font-size: 0.75rem;
+    color: rgba(255, 255, 255, 0.3);
+    border-top: 1px solid rgba(255, 255, 255, 0.05);
+    margin-top: auto;
+}
+
+/* ==========================================================================
+   Responsive Breakpoints
+   ========================================================================== */
+@media (max-width: 900px) {
+    .main-grid {
+        grid-template-columns: 1fr;
+        gap: 20px;
+    }
+    
+    .draw-section {
+        min-height: 420px;
+    }
+    
+    .records-section {
+        max-height: 480px;
+    }
+    
+    .app-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 15px;
+        margin-bottom: 30px;
+    }
+    
+    #dev-mode-btn {
+        position: absolute;
+        top: 0;
+        right: 0;
+    }
+    
+    .subtitle {
+        position: static;
+        margin-top: 4px;
+    }
+}
+
+@media (max-width: 480px) {
+    .card {
+        padding: 20px;
+    }
+    
+    .pokeball-container {
+        height: 220px;
+    }
+    
+    .pokeball, .pokeball-wrapper {
+        width: 140px;
+        height: 140px;
+    }
+    
+    .pokeball-shadow {
+        width: 100px;
+        left: 20px;
+        bottom: -10px;
+    }
+    
+    .pokeball-button {
+        width: 42px;
+        height: 42px;
+    }
+    
+    .pokeball-button-inner {
+        width: 24px;
+        height: 24px;
+        border-width: 3px;
+    }
+    
+    .pokeball-button-inner::after {
+        width: 10px;
+        height: 10px;
+    }
+    
+    .pokemon-card {
+        width: 280px;
+        height: 420px;
+    }
+    
+    .card-image-frame {
+        height: 140px;
+    }
+    
+    .btn-large {
+        padding: 14px 28px;
+        font-size: 1rem;
+    }
+    
+    .logo-area h1 {
+        font-size: 1.5rem;
+    }
+}
+
+/* ==========================================================================
+   可视化奖池编辑器样式 (Reward List Editor)
+   ========================================================================== */
+.editor-header {
+    display: flex;
+    justify-content: space-between;
+    padding: 10px;
+    font-weight: 700;
+    border-bottom: 2px solid rgba(255, 255, 255, 0.15);
+    margin-bottom: 10px;
+    font-size: 0.85rem;
+    color: rgba(255, 255, 255, 0.7);
+}
+
+.rewards-editor-container {
+    max-height: 320px;
+    overflow-y: auto;
+    padding-right: 5px;
+    margin-bottom: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+/* 自定义滚动条 */
+.rewards-editor-container::-webkit-scrollbar,
+.poke-grid::-webkit-scrollbar {
+    width: 6px;
+}
+.rewards-editor-container::-webkit-scrollbar-track,
+.poke-grid::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.02);
+    border-radius: 10px;
+}
+.rewards-editor-container::-webkit-scrollbar-thumb,
+.poke-grid::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.15);
+    border-radius: 10px;
+}
+.rewards-editor-container::-webkit-scrollbar-thumb:hover,
+.poke-grid::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.3);
+}
+
+.editor-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 10px 12px;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 16px;
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.editor-row:hover {
+    background: rgba(255, 255, 255, 0.06);
+    border-color: rgba(255, 255, 255, 0.15);
+}
+
+/* 各列宽度占比 */
+.col-text { width: 45%; }
+.col-star { width: 22%; }
+.col-poke { width: 23%; }
+.col-action { width: 10%; text-align: center; }
+
+.reward-input-text {
+    width: 100%;
+    padding: 8px 12px;
+    background: rgba(0, 0, 0, 0.3);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 10px;
+    color: var(--white);
+    outline: none;
+    font-size: 0.85rem;
+    transition: all 0.25s;
+}
+
+.reward-input-text:focus {
+    border-color: var(--secondary-color);
+    box-shadow: 0 0 8px rgba(252, 215, 5, 0.2);
+}
+
+.reward-input-star {
+    width: 100%;
+    padding: 8px;
+    background: rgba(0, 0, 0, 0.3);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 10px;
+    color: var(--secondary-color);
+    font-weight: bold;
+    outline: none;
+    font-size: 0.85rem;
+    cursor: pointer;
+    transition: all 0.25s;
+}
+
+.reward-input-star:focus {
+    border-color: var(--secondary-color);
+}
+
+.reward-input-poke {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 8px 6px;
+    font-size: 0.8rem;
+    border-radius: 10px;
+    min-height: 37px;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    transition: all 0.25s;
+}
+
+.poke-mini-icon {
+    width: 22px;
+    height: 22px;
+    object-fit: contain;
+}
+
+.delete-row-btn {
+    background: transparent;
+    border: none;
+    color: rgba(255, 255, 255, 0.4);
+    cursor: pointer;
+    font-size: 1.1rem;
+    padding: 6px;
+    border-radius: 8px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+}
+
+.delete-row-btn:hover {
+    color: var(--danger-color);
+    background: rgba(244, 67, 54, 0.1);
+    transform: scale(1.1);
+}
+
+.btn-danger-outline {
+    background: transparent;
+    border: 1px solid rgba(244, 67, 54, 0.4);
+    color: #ff6b6b;
+}
+
+.btn-danger-outline:hover {
+    background: rgba(244, 67, 54, 0.1);
+    border-color: var(--danger-color);
+    color: var(--white);
+    transform: translateY(-2px);
+}
+
+/* ==========================================================================
+   数据同步区域样式 (Data Sync Tab)
+   ========================================================================== */
+#sync-textarea {
+    width: 100%;
+    background: rgba(0, 0, 0, 0.35);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 14px;
+    color: #e4e4e7;
+    padding: 14px;
+    font-family: monospace;
+    font-size: 0.8rem;
+    line-height: 1.5;
+    resize: none;
+    outline: none;
+    transition: all 0.3s;
+}
+
+#sync-textarea:focus {
+    border-color: var(--secondary-color);
+}
+
+/* ==========================================================================
+   宝可梦图鉴选择器 (Pokemon Picker Modal)
+   ========================================================================== */
+.flex-column {
+    display: flex;
+    flex-direction: column;
+}
+
+.search-bar-wrapper {
+    position: relative;
+    margin-bottom: 18px;
+    width: 100%;
+}
+
+.search-bar-wrapper .search-icon {
+    position: absolute;
+    left: 16px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: rgba(255, 255, 255, 0.45);
+    font-size: 0.95rem;
+}
+
+.search-bar-wrapper input {
+    width: 100%;
+    padding: 14px 16px 14px 44px;
+    background: rgba(0, 0, 0, 0.3);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 14px;
+    color: var(--white);
+    font-size: 0.9rem;
+    outline: none;
+    transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+}
+
+.search-bar-wrapper input:focus {
+    border-color: var(--secondary-color);
+    box-shadow: 0 0 15px rgba(252, 215, 5, 0.25);
+    background: rgba(0, 0, 0, 0.4);
+}
+
+.poke-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(85px, 1fr));
+    gap: 12px;
+    overflow-y: auto;
+    padding: 4px;
+    flex: 1;
+}
+
+.poke-picker-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 10px 8px;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 14px;
+    cursor: pointer;
+    transition: all 0.2s ease-in-out;
+}
+
+.poke-picker-item:hover {
+    background: rgba(255, 255, 255, 0.08);
+    border-color: var(--secondary-color);
+    transform: translateY(-3px) scale(1.03);
+}
+
+.poke-picker-item.selected {
+    background: rgba(252, 215, 5, 0.12);
+    border-color: var(--secondary-color);
+    box-shadow: 0 0 12px rgba(252, 215, 5, 0.35);
+}
+
+.poke-picker-item img {
+    width: 52px;
+    height: 52px;
+    object-fit: contain;
+    filter: drop-shadow(0 4px 6px rgba(0,0,0,0.15));
+    transition: transform 0.2s;
+}
+
+.poke-picker-item:hover img {
+    transform: scale(1.1);
+}
+
+.poke-picker-item .poke-num {
+    font-size: 0.65rem;
+    color: rgba(255, 255, 255, 0.4);
+    margin-bottom: 2px;
+}
+
+.poke-picker-item .poke-name {
+    font-size: 0.78rem;
+    font-weight: 700;
+    color: rgba(255, 255, 255, 0.85);
+    text-align: center;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* ==========================================================================
+   中签星级标签 (Rarity Badges & Animation)
+   ========================================================================== */
+.star-rating {
+    color: var(--secondary-color);
+    display: inline-flex;
+    gap: 2px;
+}
+
+.star-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 3px 10px;
+    border-radius: 20px;
+    font-size: 0.72rem;
+    font-weight: 700;
+}
+
+/* 1星级 ~ 5星级 样式梯度 */
+.star-badge.rarity-1 {
+    background: rgba(255, 255, 255, 0.08);
+    color: #e2e8f0;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.star-badge.rarity-2 {
+    background: rgba(76, 175, 80, 0.15);
+    color: #81c784;
+    border: 1px solid rgba(76, 175, 80, 0.25);
+}
+
+.star-badge.rarity-3 {
+    background: rgba(33, 150, 243, 0.15);
+    color: #64b5f6;
+    border: 1px solid rgba(33, 150, 243, 0.25);
+}
+
+.star-badge.rarity-4 {
+    background: rgba(156, 39, 176, 0.15);
+    color: #ba68c8;
+    border: 1px solid rgba(156, 39, 176, 0.25);
+}
+
+.star-badge.rarity-5 {
+    background: linear-gradient(135deg, rgba(252, 215, 5, 0.2) 0%, rgba(255, 28, 28, 0.25) 100%);
+    color: var(--secondary-color);
+    border: 1px solid rgba(252, 215, 5, 0.4);
+    box-shadow: 0 0 10px rgba(252, 215, 5, 0.25);
+    animation: gold-badge-pulse 2s infinite ease-in-out;
+}
+
+@keyframes gold-badge-pulse {
+    0%, 100% {
+        box-shadow: 0 0 6px rgba(252, 215, 5, 0.2);
+        filter: brightness(1);
+    }
+    50% {
+        box-shadow: 0 0 15px rgba(252, 215, 5, 0.5);
+        filter: brightness(1.15);
+    }
+}
+
+/* ==========================================================================
+   移动端响应式补丁 (Mobile Patch for Visual Editor)
+   ========================================================================== */
+@media (max-width: 600px) {
+    .editor-header {
+        display: none;
+    }
+    
+    .editor-row {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 12px;
+        padding: 16px 14px;
+        position: relative;
+    }
+    
+    .col-text, .col-star, .col-poke, .col-action {
+        width: 100% !important;
+        text-align: left;
+    }
+    
+    .col-action {
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        width: auto !important;
+    }
+    
+    .reward-input-poke {
+        justify-content: flex-start;
+        padding-left: 12px;
+    }
+    
+    .poke-grid {
+        grid-template-columns: repeat(auto-fill, minmax(70px, 1fr));
+        gap: 8px;
+    }
+    
+    .poke-picker-item img {
+        width: 44px;
+        height: 44px;
+    }
+    
+    .poke-picker-item .poke-name {
+        font-size: 0.72rem;
+    }
+}
+
+.record-poke-avatar {
+    width: 42px;
+    height: 42px;
+    object-fit: contain;
+    margin-right: 12px;
+    filter: drop-shadow(0 2px 4px rgba(0,0,0,0.12));
+}

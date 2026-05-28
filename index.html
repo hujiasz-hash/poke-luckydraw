@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>宝可梦随机奖励抽签小游戏</title>
+    <!-- Google Fonts: Comfortaa & ZCOOL Xiaowei for a playful and premium look -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Comfortaa:wght@400;700&family=Noto+Sans+SC:wght@400;700;900&display=swap" rel="stylesheet">
+    <!-- FontAwesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Custom Style Sheet -->
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <!-- Background Elements for Poke-Atmosphere -->
+    <div class="bg-decorations">
+        <div class="bubble bubble-1"></div>
+        <div class="bubble bubble-2"></div>
+        <div class="bubble bubble-3"></div>
+    </div>
+
+    <!-- Main Container -->
+    <div class="app-container">
+        
+        <!-- Header -->
+        <header class="app-header animate-fade-in">
+            <div class="logo-area">
+                <i class="fa-solid fa-circle-dot logo-icon"></i>
+                <h1>神奇宝贝<span>奖励抽签</span></h1>
+            </div>
+            <p class="subtitle">完成任务了吗？快来召唤你的专属幸运奖励吧！</p>
+            <button id="dev-mode-btn" class="icon-btn" title="开发者后台">
+                <i class="fa-solid fa-lock"></i>
+            </button>
+        </header>
+
+        <!-- Main Workspace -->
+        <main class="main-grid">
+            
+            <!-- Left Side: Draw Area -->
+            <section class="draw-section card animate-slide-up">
+                <div class="section-header">
+                    <h2><i class="fa-solid fa-wand-magic-sparkles"></i> 幸运召唤台</h2>
+                </div>
+                
+                <div class="pokeball-container">
+                    <div id="canvas-container"></div> <!-- For particle/canvas fireworks -->
+                    <!-- 3D PokeBall -->
+                    <div class="pokeball-wrapper">
+                        <div id="pokeball" class="pokeball">
+                            <div class="pokeball-top"></div>
+                            <div class="pokeball-band"></div>
+                            <div class="pokeball-button">
+                                <div class="pokeball-button-inner"></div>
+                            </div>
+                            <div class="pokeball-bottom"></div>
+                        </div>
+                        <div class="pokeball-shadow"></div>
+                    </div>
+                </div>
+
+                <div class="control-area">
+                    <button id="draw-btn" class="btn btn-primary btn-large">
+                        <span class="btn-text">掷出精灵球 抽奖！</span>
+                        <span class="btn-shine"></span>
+                    </button>
+                    <p id="pool-status-text" class="status-text">奖池加载中...</p>
+                </div>
+            </section>
+
+            <!-- Right Side: Records Area -->
+            <section class="records-section card animate-slide-up" style="animation-delay: 0.1s;">
+                <div class="section-header">
+                    <h2><i class="fa-solid fa-list-check"></i> 中奖荣誉榜</h2>
+                    <span id="record-count" class="badge">0 条未核销</span>
+                </div>
+
+                <div class="records-list-wrapper">
+                    <!-- Checkbox action header -->
+                    <div class="list-actions" id="list-actions-bar" style="display: none;">
+                        <button id="select-all-btn" class="btn btn-outline btn-sm">全选</button>
+                        <button id="deselect-all-btn" class="btn btn-outline btn-sm">取消全选</button>
+                        <button id="batch-redeem-btn" class="btn btn-danger btn-sm">
+                            <i class="fa-solid fa-trash-can"></i> 核销选中 (<span id="selected-count">0</span>)
+                        </button>
+                    </div>
+
+                    <!-- Records List -->
+                    <div id="records-list" class="records-list">
+                        <div class="empty-state">
+                            <img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/25.png" alt="Pikachu" class="empty-img">
+                            <p>还没有中奖记录哦，快去完成任务抽奖吧！</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+
+        <!-- Footer -->
+        <footer class="app-footer">
+            <p>Pokémon 主题随机奖励系统 &copy; 2026</p>
+        </footer>
+    </div>
+
+    <!-- Modal: Developer Control Center (Settings) -->
+    <div id="dev-modal" class="modal-overlay">
+        <div class="modal card animate-scale-in">
+            <div class="modal-header">
+                <h2><i class="fa-solid fa-gear"></i> 开发者设置后台</h2>
+                <button class="close-modal-btn" id="close-dev-modal"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            
+            <div class="modal-body">
+                <!-- Tabs -->
+                <div class="tab-header">
+                    <button class="tab-btn active" data-tab="tab-rewards">奖励池配置</button>
+                    <button class="tab-btn" data-tab="tab-sync">数据同步</button>
+                    <button class="tab-btn" data-tab="tab-settings">密码安全设置</button>
+                </div>
+
+                <!-- Tab: Reward Pool -->
+                <div class="tab-content active" id="tab-rewards">
+                    <p class="section-desc">在这里配置奖励项。您可以添加、删除奖励，并为每个奖励项选择<b>稀有星级（决定中签率）</b>和<b>绑定宝可梦</b>。</p>
+                    
+                    <div class="editor-header">
+                        <span class="col-text">奖励内容</span>
+                        <span class="col-star">中签星级</span>
+                        <span class="col-poke">绑定精灵</span>
+                        <span class="col-action">操作</span>
+                    </div>
+                    <div id="rewards-list-editor" class="rewards-editor-container">
+                        <!-- 动态渲染奖项配置行 -->
+                    </div>
+
+                    <div class="pool-actions">
+                        <button id="add-reward-btn" class="btn btn-outline"><i class="fa-solid fa-plus"></i> 新增奖励项</button>
+                        <button id="save-pool-btn" class="btn btn-primary"><i class="fa-solid fa-floppy-disk"></i> 保存并生效</button>
+                        <button id="reset-pool-btn" class="btn btn-danger-outline"><i class="fa-solid fa-rotate-left"></i> 重置默认</button>
+                    </div>
+                </div>
+
+                <!-- Tab: Data Sync -->
+                <div class="tab-content" id="tab-sync">
+                    <p class="section-desc">由于数据存储在本地浏览器中，您可以通过复制配置在多设备（如您的手机和孩子的iPad）之间手动同步。</p>
+                    
+                    <div class="form-group">
+                        <label for="sync-textarea">配置数据（JSON文本）：</label>
+                        <textarea id="sync-textarea" rows="8" placeholder="点击“导出”复制配置，或在此处粘贴已有的配置文本进行导入..."></textarea>
+                    </div>
+
+                    <div class="pool-actions">
+                        <button id="export-pool-btn" class="btn btn-primary"><i class="fa-solid fa-download"></i> 导出配置数据</button>
+                        <button id="import-pool-btn" class="btn btn-outline"><i class="fa-solid fa-upload"></i> 导入并覆写配置</button>
+                    </div>
+                </div>
+
+                <!-- Tab: System Settings -->
+                <div class="tab-content" id="tab-settings">
+                    <p class="section-desc">修改进入开发者模式和核销奖励时的密码，防止孩子误操作。</p>
+                    
+                    <div class="form-group">
+                        <label for="password-input">新访问密码：</label>
+                        <input type="password" id="password-input" placeholder="输入4-6位数字或密码" maxlength="10">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="password-confirm-input">确认新密码：</label>
+                        <input type="password" id="password-confirm-input" placeholder="再次输入密码" maxlength="10">
+                    </div>
+
+                    <div class="pool-actions">
+                        <button id="save-password-btn" class="btn btn-primary"><i class="fa-solid fa-key"></i> 修改密码</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: Lucky Card Result (Lottery Draw Result) -->
+    <div id="result-modal" class="modal-overlay">
+        <div class="card-glow-effect"></div>
+        <div class="result-card-container">
+            <!-- Pokemon TCG Style Card -->
+            <div id="reward-card" class="pokemon-card animate-card-reveal">
+                <div class="card-header-sparkle"></div>
+                <div class="card-inner">
+                    <div class="card-top-info">
+                        <span class="card-type" id="card-poke-name"><i class="fa-solid fa-circle-dot"></i> 幸运宝可梦</span>
+                        <span class="card-hp" id="card-poke-rarity"><i class="fa-solid fa-star"></i> 1星级</span>
+                    </div>
+                    
+                    <!-- Poke Image Frame -->
+                    <div class="card-image-frame">
+                        <div class="image-loader">
+                            <i class="fa-solid fa-spinner fa-spin"></i> 召唤精灵中...
+                        </div>
+                        <img id="reward-poke-img" src="" alt="Lucky Pokemon" style="display: none;">
+                    </div>
+                    
+                    <!-- Reward Details -->
+                    <div class="card-reward-info">
+                        <h3 class="reward-title-label">恭喜获得奖励</h3>
+                        <div class="reward-value-box">
+                            <span id="reward-result-value">超级大奖！</span>
+                        </div>
+                        <p class="card-flavor-text" id="pokemon-flavor-desc">
+                            一只皮卡丘跳了出来，把它的好运气分给了你！快去找爸爸妈妈兑换你的奖励吧！
+                        </p>
+                    </div>
+
+                    <!-- Card Footer -->
+                    <div class="card-footer-info">
+                        <span>NO.001-999</span>
+                        <span>&copy; 宝可梦神奇奖励</span>
+                    </div>
+                </div>
+            </div>
+            
+            <button id="close-result-btn" class="btn btn-primary btn-large animate-fade-in-delayed">
+                太棒了，收入背包！
+            </button>
+        </div>
+    </div>
+
+    <!-- Modal: Password Authentication (Numeric keypad style for kids/parents) -->
+    <div id="auth-modal" class="modal-overlay">
+        <div class="auth-card card animate-scale-in">
+            <div class="auth-header">
+                <i class="fa-solid fa-shield-halved auth-icon"></i>
+                <h3>家长身份验证</h3>
+                <p>请输入密码以进入管理或核销奖励</p>
+            </div>
+            
+            <!-- Pin Display dots -->
+            <div class="pin-display">
+                <div class="pin-dot"></div>
+                <div class="pin-dot"></div>
+                <div class="pin-dot"></div>
+                <div class="pin-dot"></div>
+            </div>
+            
+            <!-- Numeric keypad -->
+            <div class="keypad">
+                <button class="key-btn" data-val="1">1</button>
+                <button class="key-btn" data-val="2">2</button>
+                <button class="key-btn" data-val="3">3</button>
+                <button class="key-btn" data-val="4">4</button>
+                <button class="key-btn" data-val="5">5</button>
+                <button class="key-btn" data-val="6">6</button>
+                <button class="key-btn" data-val="7">7</button>
+                <button class="key-btn" data-val="8">8</button>
+                <button class="key-btn" data-val="9">9</button>
+                <button class="key-btn text-danger" id="key-clear"><i class="fa-solid fa-delete-left"></i></button>
+                <button class="key-btn" data-val="0">0</button>
+                <button class="key-btn text-warning" id="key-close"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: Pokemon Picker (151 Grid) -->
+    <div id="poke-picker-modal" class="modal-overlay">
+        <div class="modal card animate-scale-in">
+            <div class="modal-header">
+                <h2><i class="fa-solid fa-gamepad"></i> 选择绑定宝可梦</h2>
+                <button class="close-modal-btn" id="close-poke-picker-btn"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            
+            <div class="modal-body flex-column" style="max-height: 70vh;">
+                <div class="search-bar-wrapper">
+                    <i class="fa-solid fa-magnifying-glass search-icon"></i>
+                    <input type="text" id="poke-search-input" placeholder="输入宝可梦中文名称或编号搜索（如皮卡丘 / 25）...">
+                </div>
+                
+                <div id="poke-grid" class="poke-grid">
+                    <!-- 151只宝可梦通过 JS 渲染 -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Script Files -->
+    <script src="app.js"></script>
+</body>
+</html>
