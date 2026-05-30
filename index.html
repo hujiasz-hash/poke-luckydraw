@@ -29,6 +29,9 @@
             <div class="logo-area">
                 <i class="fa-solid fa-circle-dot logo-icon"></i>
                 <h1>神奇宝贝<span>奖励抽签</span></h1>
+                <div id="cloud-sync-status" class="cloud-sync-status">
+                    <i class="fa-solid fa-cloud"></i> <span>云端同步中...</span>
+                </div>
             </div>
             <p class="subtitle">完成任务了吗？快来召唤你的专属幸运奖励吧！</p>
             <button id="dev-mode-btn" class="icon-btn" title="开发者后台">
@@ -116,7 +119,7 @@
                 <!-- Tabs -->
                 <div class="tab-header">
                     <button class="tab-btn active" data-tab="tab-rewards">奖励池配置</button>
-                    <button class="tab-btn" data-tab="tab-sync">数据同步</button>
+                    <button class="tab-btn" data-tab="tab-probability">抽签概率设置</button>
                     <button class="tab-btn" data-tab="tab-settings">密码安全设置</button>
                 </div>
 
@@ -141,18 +144,74 @@
                     </div>
                 </div>
 
-                <!-- Tab: Data Sync -->
-                <div class="tab-content" id="tab-sync">
-                    <p class="section-desc">由于数据存储在本地浏览器中，您可以通过复制配置在多设备（如您的手机和孩子的iPad）之间手动同步。</p>
+                <!-- Tab: Probability Settings -->
+                <div class="tab-content" id="tab-probability">
+                    <p class="section-desc">调节各个稀有星级的概率权重值。权重越大，在抽签时被选择的概率就越高。</p>
                     
-                    <div class="form-group">
-                        <label for="sync-textarea">配置数据（JSON文本）：</label>
-                        <textarea id="sync-textarea" rows="8" placeholder="点击“导出”复制配置，或在此处粘贴已有的配置文本进行导入..."></textarea>
+                    <div class="probability-config-container">
+                        <!-- 1星 -->
+                        <div class="prob-row" style="--prob-color: #4caf50;">
+                            <div class="prob-label">
+                                <span class="stars">★</span> 1星级 (常见)
+                            </div>
+                            <div class="prob-control">
+                                <input type="range" id="weight-slider-1" class="prob-slider" min="0" max="100" value="40" oninput="onWeightSliderChange(1, this.value)">
+                                <input type="number" id="weight-num-1" class="prob-num-input" min="0" max="100" value="40" oninput="onWeightNumChange(1, this.value)">
+                                <span class="prob-percent" id="prob-percent-1">0%</span>
+                            </div>
+                        </div>
+
+                        <!-- 2星 -->
+                        <div class="prob-row" style="--prob-color: #00bcd4;">
+                            <div class="prob-label">
+                                <span class="stars">★★</span> 2星级 (稀有)
+                            </div>
+                            <div class="prob-control">
+                                <input type="range" id="weight-slider-2" class="prob-slider" min="0" max="100" value="30" oninput="onWeightSliderChange(2, this.value)">
+                                <input type="number" id="weight-num-2" class="prob-num-input" min="0" max="100" value="30" oninput="onWeightNumChange(2, this.value)">
+                                <span class="prob-percent" id="prob-percent-2">0%</span>
+                            </div>
+                        </div>
+
+                        <!-- 3星 -->
+                        <div class="prob-row" style="--prob-color: #9c27b0;">
+                            <div class="prob-label">
+                                <span class="stars">★★★</span> 3星级 (史诗)
+                            </div>
+                            <div class="prob-control">
+                                <input type="range" id="weight-slider-3" class="prob-slider" min="0" max="100" value="20" oninput="onWeightSliderChange(3, this.value)">
+                                <input type="number" id="weight-num-3" class="prob-num-input" min="0" max="100" value="20" oninput="onWeightNumChange(3, this.value)">
+                                <span class="prob-percent" id="prob-percent-3">0%</span>
+                            </div>
+                        </div>
+
+                        <!-- 4星 -->
+                        <div class="prob-row" style="--prob-color: #ff9800;">
+                            <div class="prob-label">
+                                <span class="stars">★★★★</span> 4星级 (传奇)
+                            </div>
+                            <div class="prob-control">
+                                <input type="range" id="weight-slider-4" class="prob-slider" min="0" max="100" value="10" oninput="onWeightSliderChange(4, this.value)">
+                                <input type="number" id="weight-num-4" class="prob-num-input" min="0" max="100" value="10" oninput="onWeightNumChange(4, this.value)">
+                                <span class="prob-percent" id="prob-percent-4">0%</span>
+                            </div>
+                        </div>
+
+                        <!-- 5星 -->
+                        <div class="prob-row" style="--prob-color: #ff1c1c;">
+                            <div class="prob-label">
+                                <span class="stars">★★★★★</span> 5星级 (神话)
+                            </div>
+                            <div class="prob-control">
+                                <input type="range" id="weight-slider-5" class="prob-slider" min="0" max="100" value="5" oninput="onWeightSliderChange(5, this.value)">
+                                <input type="number" id="weight-num-5" class="prob-num-input" min="0" max="100" value="5" oninput="onWeightNumChange(5, this.value)">
+                                <span class="prob-percent" id="prob-percent-5">0%</span>
+                            </div>
+                        </div>
                     </div>
 
                     <div class="pool-actions">
-                        <button id="export-pool-btn" class="btn btn-primary"><i class="fa-solid fa-download"></i> 导出配置数据</button>
-                        <button id="import-pool-btn" class="btn btn-outline"><i class="fa-solid fa-upload"></i> 导入并覆写配置</button>
+                        <button id="save-weights-btn" class="btn btn-primary"><i class="fa-solid fa-floppy-disk"></i> 保存并生效概率</button>
                     </div>
                 </div>
 

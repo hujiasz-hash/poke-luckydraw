@@ -16,6 +16,7 @@ window.onerror = function (message, source, lineno, colno, error) {
 };
 
 // --- 第一代 151 只宝可梦名字映射表 ---
+const POKE_SPRITE_CDN = "https://fastly.jsdelivr.net/gh/PokeAPI/sprites@master/sprites/pokemon";
 const POKEMON_NAMES = [
     "妙蛙种子", "妙蛙草", "妙蛙花", "小火龙", "火恐龙", "喷火龙", "杰尼龟", "卡咪龟", "水箭龟", "绿毛虫",
     "铁甲蛹", "巴大蝶", "独角虫", "铁壳蛹", "大针蜂", "波波", "比比鸟", "大比鸟", "小拉达", "拉达",
@@ -69,6 +70,7 @@ const POKEMON_FLAVORS = {
 let rewardPool = [];
 let drawRecords = [];
 let parentPin = DEFAULT_PIN;
+let starWeights = { 1: 40, 2: 30, 3: 20, 4: 10, 5: 5 };
 
 // 待执行的安全敏感操作回调（输入密码成功后执行）
 let pendingSecureAction = null; 
@@ -82,15 +84,159 @@ let activeEditingRowIndex = -1; // 正在编辑哪一行的宝可梦
 
 // --- 页面元素加载 ---
 document.addEventListener("DOMContentLoaded", () => {
-    initLocalStorage();
-    renderRewardPoolStatus();
-    renderRecords();
+    initData();
     setupEventListeners();
     setupCanvas();
 });
 
-// --- 初始化本地存储 ---
-function initLocalStorage() {
+// --- 更新云同步状态 UI ---
+function updateSyncStatus(status) {
+    const el = document.getElementById("cloud-sync-status");
+    if (!el) return;
+    
+    // 清除原有状态类
+    el.className = "cloud-sync-status";
+    const icon = el.querySelector("i");
+    const text = el.querySelector("span");
+    
+    if (status === "syncing") {
+        el.classList.add("syncing");
+        icon.className = "fa-solid fa-rotate";
+        text.innerText = "云端同步中...";
+    } else if (status === "synced") {
+        el.classList.add("synced");
+        icon.className = "fa-solid fa-cloud";
+        text.innerText = "云端已同步";
+    } else if (status === "offline") {
+        el.classList.add("offline");
+        icon.className = "fa-solid fa-cloud-slash";
+        text.innerText = "离线缓存中";
+    }
+}
+
+// --- 异步云端拉取数据 (SWR 缓存策略) ---
+async function initData() {
+    // 1. 优先使用本地缓存立即渲染，实现秒开首屏展示
+    initLocalStorageFallback();
+    
+    // 渲染 UI
+    renderRewardPoolStatus();
+    renderRecords();
+    renderProbabilitySettings();
+    initPokeGrid();
+
+    // 2. 异步向云端同步，进行静默校验和覆盖
+    updateSyncStatus("syncing");
+    
+    try {
+        const response = await fetch("/.netlify/functions/storage", {
+            method: "GET",
+            headers: {
+                "Accept": "application/json"
+            }
+        });
+        
+        if (!response.ok) {
+            throw new Error(`Cloud storage error: ${response.status}`);
+        }
+        
+        const data = await response.json();
+        
+        // 云端同步成功，更新全局状态变量并覆写本地缓存
+        parentPin = data.pin;
+        rewardPool = data.rewards;
+        drawRecords = data.records;
+        starWeights = data.weights || starWeights;
+        
+        localStorage.setItem("pokemon_pin", parentPin);
+        localStorage.setItem("pokemon_rewards", JSON.stringify(rewardPool));
+        localStorage.setItem("pokemon_records", JSON.stringify(drawRecords));
+        localStorage.setItem("pokemon_weights", JSON.stringify(starWeights));
+        
+        // 预加载当前奖池的图片以备秒开
+        preloadRewardImages();
+        
+        updateSyncStatus("synced");
+        
+        // 静默重绘 UI 确保数据最新一致
+        renderRewardPoolStatus();
+        renderRecords();
+        if (document.getElementById("dev-modal").classList.contains("open")) {
+            renderProbabilitySettings();
+        }
+    } catch (e) {
+        console.warn("后台拉取云端数据同步失败，继续使用本地缓存展示：", e);
+        updateSyncStatus("offline");
+    }
+}
+
+// --- 同步数据到云端 (以云端为事实源的单向数据流) ---
+async function syncToCloud(action, data) {
+    updateSyncStatus("syncing");
+    try {
+        const payload = {
+            action: action,
+            pin: parentPin,
+            data: data
+        };
+
+        const response = await fetch("/.netlify/functions/storage", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify(payload)
+        });
+
+        if (!response.ok) {
+            if (response.status === 401) {
+                const errData = await response.json();
+                alert(errData.error || "操作验证失败：密码错误");
+                updateSyncStatus("synced");
+                return false;
+            }
+            throw new Error(`Cloud storage update error: ${response.status}`);
+        }
+
+        const latestData = await response.json();
+        
+        // 成功后，以服务器返回的最新的权威云端数据覆盖本地缓存和变量
+        parentPin = latestData.pin;
+        rewardPool = latestData.rewards;
+        drawRecords = latestData.records;
+        if (latestData.weights) {
+            starWeights = latestData.weights;
+            localStorage.setItem("pokemon_weights", JSON.stringify(starWeights));
+        }
+        
+        localStorage.setItem("pokemon_pin", parentPin);
+        localStorage.setItem("pokemon_rewards", JSON.stringify(rewardPool));
+        localStorage.setItem("pokemon_records", JSON.stringify(drawRecords));
+
+        updateSyncStatus("synced");
+
+        // 重新渲染页面模块，保证状态一致
+        renderRewardPoolStatus();
+        renderRecords();
+        if (document.getElementById("dev-modal").classList.contains("open")) {
+            renderProbabilitySettings();
+        }
+
+        // 抽奖动作特殊处理，返回云端生成的中奖信息
+        if (action === "draw") {
+            return latestData.winReward;
+        }
+
+        return true;
+    } catch (e) {
+        console.warn("数据同步至云端失败：", e);
+        updateSyncStatus("offline");
+        return false;
+    }
+}
+
+// --- 本地存储加载（离线兜底逻辑） ---
+function initLocalStorageFallback() {
     // 1. 初始化密码
     if (!localStorage.getItem("pokemon_pin")) {
         localStorage.setItem("pokemon_pin", DEFAULT_PIN);
@@ -200,6 +346,21 @@ function initLocalStorage() {
         drawRecords = [];
         localStorage.setItem("pokemon_records", JSON.stringify([]));
     }
+
+    // 4. 初始化抽签概率权重缓存
+    const rawWeights = localStorage.getItem("pokemon_weights");
+    if (rawWeights) {
+        try {
+            starWeights = JSON.parse(rawWeights);
+        } catch (e) {
+            starWeights = { 1: 40, 2: 30, 3: 20, 4: 10, 5: 5 };
+        }
+    } else {
+        localStorage.setItem("pokemon_weights", JSON.stringify(starWeights));
+    }
+
+    // 预加载本地缓存中的奖池图片
+    preloadRewardImages();
 }
 
 // --- 渲染奖池状态（主界面提示） ---
@@ -227,7 +388,7 @@ function renderRecords() {
         actionsBar.style.display = "none";
         listContainer.innerHTML = `
             <div class="empty-state">
-                <img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/25.png" alt="Pikachu" class="empty-img">
+                <img src="${POKE_SPRITE_CDN}/other/official-artwork/25.png" alt="Pikachu" class="empty-img">
                 <p>还没有中奖记录哦，快去完成任务抽奖吧！</p>
             </div>
         `;
@@ -240,7 +401,7 @@ function renderRecords() {
 
     // 渲染每一条记录
     listContainer.innerHTML = drawRecords.map(record => {
-        const spriteUrl = record.pokemonId ? `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${record.pokemonId}.png` : '';
+        const spriteUrl = record.pokemonId ? `${POKE_SPRITE_CDN}/${record.pokemonId}.png` : '';
         const starsHtml = record.star ? `<span class="star-rating">${'★'.repeat(record.star)}</span>` : '';
         return `
             <div class="record-item" data-id="${record.id}" onclick="toggleRecordSelect(this)">
@@ -381,7 +542,7 @@ function verifyPin() {
     }
 }
 
-// --- 核销记录逻辑 ---
+// --- 核销记录逻辑 (以云端为事实源的单向数据流) ---
 function batchRedeem() {
     const checkedBoxes = document.querySelectorAll('#records-list input[type="checkbox"]:checked');
     if (checkedBoxes.length === 0) return;
@@ -389,54 +550,36 @@ function batchRedeem() {
     // 调起家长密码锁
     openAuthModal(() => {
         // 密码验证成功后执行：
-        const idsToRemove = Array.from(checkedBoxes).map(cb => parseInt(cb.value));
+        const idsToRemove = Array.from(checkedBoxes).map(cb => String(cb.value));
+        const targetRecords = drawRecords.filter(record => !idsToRemove.includes(String(record.id)));
         
         // 播放滑动淡出动画
         checkedBoxes.forEach(cb => {
             const row = cb.closest(".record-item");
-            row.classList.add("removing");
+            if (row) row.classList.add("removing");
         });
 
-        // 动画播放完后真正从数组中删除并重新渲染
-        setTimeout(() => {
-            drawRecords = drawRecords.filter(record => !idsToRemove.includes(record.id));
-            localStorage.setItem("pokemon_records", JSON.stringify(drawRecords));
-            renderRecords();
+        // 动画播放完后向云端发起核销申请
+        setTimeout(async () => {
+            const success = await syncToCloud("redeem_records", targetRecords);
             
-            // 粒子特效祝贺核销成功
-            triggerCelebration(20);
+            if (success) {
+                // 粒子特效祝贺核销成功
+                triggerCelebration(20);
+            } else {
+                alert("核销同步到云端失败，请检查网络连接！");
+                // 同步失败，恢复移除动画状态，让记录重新显示并重绘
+                checkedBoxes.forEach(cb => {
+                    const row = cb.closest(".record-item");
+                    if (row) row.classList.remove("removing");
+                });
+                renderRecords();
+            }
         }, 400);
     });
 }
 
-// 权重随机选择函数
-function getWeightedRandomReward() {
-    const starWeights = { 1: 40, 2: 30, 3: 20, 4: 10, 5: 5 };
-    
-    // 计算总权重
-    let totalWeight = 0;
-    rewardPool.forEach(item => {
-        const weight = starWeights[item.star] || 40;
-        totalWeight += weight;
-    });
-    
-    if (totalWeight === 0) return null;
-    
-    // 随机数值
-    let randomVal = Math.random() * totalWeight;
-    
-    // 遍历寻找对应项
-    for (const item of rewardPool) {
-        const weight = starWeights[item.star] || 40;
-        if (randomVal < weight) {
-            return item;
-        }
-        randomVal -= weight;
-    }
-    return rewardPool[rewardPool.length - 1]; // 兜底
-}
-
-// --- 抽签主逻辑 ---
+// --- 抽签主逻辑 (由后端进行随机权重抽奖决策) ---
 function triggerLuckyDraw() {
     if (rewardPool.length === 0) {
         alert("奖励池中还没有任何奖励哦，请先在开发者面板中添加！");
@@ -465,31 +608,18 @@ function triggerLuckyDraw() {
     }, 2400);
 
     // 3. 2.8秒后，弹出中奖卡牌结果
-    setTimeout(() => {
-        // 计算随机中奖项目
-        const winReward = getWeightedRandomReward();
+    setTimeout(async () => {
+        // 向云端发起免密抽奖申请，并等待云端计算结果及返回
+        const winReward = await syncToCloud("draw");
+        
         if (!winReward) {
-            alert("抽奖失败，奖池为空！");
+            alert("抽奖失败，请检查网络连接！");
+            pokeball.classList.remove("opening");
             drawBtn.disabled = false;
             return;
         }
         
-        // 记录到历史中
-        const now = new Date();
-        const dateStr = `${now.getFullYear()}年${padZero(now.getMonth()+1)}月${padZero(now.getDate())}日 ${padZero(now.getHours())}:${padZero(now.getMinutes())}`;
-        const newRecord = {
-            id: Date.now(),
-            time: dateStr,
-            reward: winReward.text,
-            pokemonId: winReward.pokemonId,
-            pokemonName: winReward.pokemonName,
-            star: winReward.star
-        };
-        drawRecords.unshift(newRecord);
-        localStorage.setItem("pokemon_records", JSON.stringify(drawRecords));
-        renderRecords();
-        
-        // 显示中奖弹窗
+        // 显示中奖弹窗 (同步成功后最新记录列表已在 syncToCloud 内部被自动渲染)
         showResultModal(winReward);
         
         // 重置精灵球状态以便下次使用
@@ -513,6 +643,17 @@ function showResultModal(winReward) {
     const loader = resultModal.querySelector(".image-loader");
     const flavorText = document.getElementById("pokemon-flavor-desc");
     
+    // 立即清除并隐藏上一张图片的 src，显示加载动画，防止连抽时短暂显示旧图片
+    if (pokeImg) {
+        pokeImg.onload = null;
+        pokeImg.onerror = null;
+        pokeImg.style.display = "none";
+        pokeImg.src = "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7";
+    }
+    if (loader) {
+        loader.style.display = "block";
+    }
+
     const rewardText = winReward.text;
     const pokeId = winReward.pokemonId || 25;
     const pokeName = winReward.pokemonName || "皮卡丘";
@@ -527,24 +668,48 @@ function showResultModal(winReward) {
     rarityEl.className = `card-hp star-badge rarity-${star}`;
     rarityEl.innerHTML = `<i class="fa-solid fa-star"></i> ${star}星级`;
     
-    // 加载宝可梦图片
-    pokeImg.style.display = "none";
-    loader.style.display = "flex";
-    
-    // 使用官方的高清原画
-    pokeImg.src = `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${pokeId}.png`;
+    // 备用多重 CDN 域名列表，自动降级切换
+    const cdnList = [
+        "https://gcore.jsdelivr.net/gh/PokeAPI/sprites@master/sprites/pokemon",
+        "https://cdn.jsdelivr.net/gh/PokeAPI/sprites@master/sprites/pokemon",
+        "https://fastly.jsdelivr.net/gh/PokeAPI/sprites@master/sprites/pokemon",
+        "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon"
+    ];
+    let cdnIndex = 0;
+
+    const tryLoadImage = () => {
+        const baseCdn = cdnList[cdnIndex];
+        pokeImg.src = `${baseCdn}/other/official-artwork/${pokeId}.png`;
+    };
     
     pokeImg.onload = () => {
         loader.style.display = "none";
         pokeImg.style.display = "block";
+        // 成功后解绑，释放内存
+        pokeImg.onload = null;
+        pokeImg.onerror = null;
     };
     
     pokeImg.onerror = () => {
-        // 若网络失败，则使用默认的皮卡丘本地占位或图标
-        loader.style.display = "none";
-        pokeImg.src = "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/25.png";
-        pokeImg.style.display = "block";
+        cdnIndex++;
+        if (cdnIndex < cdnList.length) {
+            console.warn(`宝可梦图片主线路加载失败，正在尝试备用线路 ${cdnIndex + 1}...`);
+            tryLoadImage();
+        } else {
+            // 所有 CDN 失败，使用纯本地 Base64 绘制的拟真精灵球兜底，100% 成功显示，彻底防卡死
+            console.error("所有宝可梦大图 CDN 线路加载失败，使用本地 SVG 兜底！");
+            loader.style.display = "none";
+            pokeImg.onload = null;
+            pokeImg.onerror = null;
+            
+            // Base64 精英球 SVG
+            pokeImg.src = "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='50' cy='50' r='45' fill='%23f5f5f5' stroke='%23333' stroke-width='8'/><path d='M5 50 h90' stroke='%23333' stroke-width='8'/><circle cx='50' cy='50' r='15' fill='%23fff' stroke='%23333' stroke-width='8'/><circle cx='50' cy='50' r='6' fill='%23333'/><path d='M5 50 A45 45 0 0 1 95 50' fill='%23ff1c1c'/></svg>";
+            pokeImg.style.display = "block";
+        }
     };
+
+    // 开启拉取
+    tryLoadImage();
     
     // 填充宝可梦对话描述
     let desc = POKEMON_FLAVORS[pokeId];
@@ -568,6 +733,16 @@ function showResultModal(winReward) {
 
 function closeResultModal() {
     document.getElementById("result-modal").classList.remove("open");
+    // 等待淡出动画（300ms）结束后清空图片，防止淡出时突然变白，同时确保下一次弹窗没有缓存残留
+    setTimeout(() => {
+        const pokeImg = document.getElementById("reward-poke-img");
+        if (pokeImg) {
+            pokeImg.onload = null;
+            pokeImg.onerror = null;
+            pokeImg.src = "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7";
+            pokeImg.style.display = "none";
+        }
+    }, 300);
 }
 
 // --- 开发者后台模态框 ---
@@ -576,8 +751,8 @@ function openDevModal() {
     editingRewards = JSON.parse(JSON.stringify(rewardPool));
     renderRewardsEditor();
     
-    // 清空数据同步文本框
-    document.getElementById("sync-textarea").value = "";
+    // 渲染概率滑块数值与对应的百分比
+    renderProbabilitySettings();
     
     // 填充密码输入框
     document.getElementById("password-input").value = "";
@@ -621,7 +796,7 @@ function renderRewardsEditor() {
     if (!container) return;
     
     container.innerHTML = editingRewards.map((reward, index) => {
-        const pokeSprite = `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${reward.pokemonId}.png`;
+        const pokeSprite = `${POKE_SPRITE_CDN}/${reward.pokemonId}.png`;
         return `
             <div class="editor-row" data-index="${index}">
                 <div class="col-text">
@@ -639,7 +814,7 @@ function renderRewardsEditor() {
                 </div>
                 <div class="col-poke">
                     <button class="btn btn-outline btn-sm reward-input-poke" onclick="openPokePicker(${index})">
-                        <img src="${pokeSprite}" class="poke-mini-icon" onerror="this.src='https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/25.png'">
+                        <img src="${pokeSprite}" class="poke-mini-icon" onerror="this.onerror=null; this.src='data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 100 100\'><circle cx=\'50\' cy=\'50\' r=\'45\' fill=\'%23ff1c1c\' stroke=\'%23333\' stroke-width=\'8\'/><path d=\'M5 50 h90\' stroke=\'%23333\' stroke-width=\'8\'/><circle cx=\'50\' cy=\'50\' r=\'15\' fill=\'%23fff\' stroke=\'%23333\' stroke-width=\'8\'/><circle cx=\'50\' cy=\'50\' r=\'6\' fill=\'%23333\'/></svg>'">
                         <span>${reward.pokemonName}</span>
                     </button>
                 </div>
@@ -694,11 +869,11 @@ function initPokeGrid() {
     
     grid.innerHTML = POKEMON_NAMES.map((name, index) => {
         const id = index + 1;
-        const spriteUrl = `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${id}.png`;
+        const spriteUrl = `${POKE_SPRITE_CDN}/${id}.png`;
         return `
             <div class="poke-picker-item" data-id="${id}" data-name="${name}" onclick="selectPokemonForActiveRow(${id}, '${name}')">
                 <span class="poke-num">#${id.toString().padStart(3, '0')}</span>
-                <img src="${spriteUrl}" alt="${name}" loading="lazy" onerror="this.src='https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/25.png'">
+                <img src="${spriteUrl}" alt="${name}" loading="lazy" onerror="this.onerror=null; this.src='data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 100 100\'><circle cx=\'50\' cy=\'50\' r=\'45\' fill=\'%23fcd705\' stroke=\'%23333\' stroke-width=\'8\'/><path d=\'M5 50 h90\' stroke=\'%23333\' stroke-width=\'8\'/><circle cx=\'50\' cy=\'50\' r=\'15\' fill=\'%23fff\' stroke=\'%23333\' stroke-width=\'8\'/><circle cx=\'50\' cy=\'50\' r=\'6\' fill=\'%23333\'/></svg>'">
                 <span class="poke-name">${name}</span>
             </div>
         `;
@@ -786,12 +961,18 @@ function saveRewardPool() {
         return;
     }
     
-    rewardPool = JSON.parse(JSON.stringify(editingRewards));
-    localStorage.setItem("pokemon_rewards", JSON.stringify(rewardPool));
-    renderRewardPoolStatus();
-    
-    alert("奖励池配置保存成功并已生效！");
     closeDevModal();
+    updateSyncStatus("syncing");
+    
+    // 直接向云端同步，同步成功后会自动用返回值更新本地全局变量、LocalStorage 及 UI
+    syncToCloud("save_rewards", editingRewards).then(success => {
+        if (success) {
+            alert("奖励池配置已成功保存并同步至云端！");
+        } else {
+            alert("同步配置至云端失败，请检查网络连接！");
+        }
+        preloadRewardImages();
+    });
 }
 
 // 重置默认奖池
@@ -875,9 +1056,14 @@ function saveNewPassword() {
         return;
     }
     
-    parentPin = pin;
-    localStorage.setItem("pokemon_pin", pin);
-    alert("密码修改成功！请记住您的新密码。");
+    // 异步同步云端
+    syncToCloud("change_pin", pin).then(success => {
+        if (success) {
+            alert("密码修改成功并已同步至云端！请记住您的新密码。");
+        } else {
+            alert("修改密码失败：云端同步连接失败，请检查网络后重试。");
+        }
+    });
     
     document.getElementById("password-input").value = "";
     document.getElementById("password-confirm-input").value = "";
@@ -913,9 +1099,8 @@ function setupEventListeners() {
     // 6. 宝可梦选择弹窗关闭按钮
     document.getElementById("close-poke-picker-btn").addEventListener("click", closePokePicker);
     
-    // 7. 配置同步导出导入
-    document.getElementById("export-pool-btn").addEventListener("click", exportConfig);
-    document.getElementById("import-pool-btn").addEventListener("click", importConfig);
+    // 7. 抽签概率权重保存
+    document.getElementById("save-weights-btn").addEventListener("click", saveWeights);
     
     // 8. 记录选择与核销
     document.getElementById("select-all-btn").addEventListener("click", selectAllRecords);
@@ -930,6 +1115,28 @@ function setupEventListeners() {
     });
     document.getElementById("key-clear").addEventListener("click", clearPinInput);
     document.getElementById("key-close").addEventListener("click", closeAuthModal);
+
+    // 10. 全局物理键盘输入监听器（仅在弹窗打开时生效）
+    document.addEventListener("keydown", (e) => {
+        const authModal = document.getElementById("auth-modal");
+        if (authModal && authModal.classList.contains("open")) {
+            // 如果输入的是 0-9 的数字
+            if (e.key >= "0" && e.key <= "9") {
+                handleKeypadPress(e.key);
+            }
+            // Backspace/Delete 退格回退一位
+            else if (e.key === "Backspace" || e.key === "Delete") {
+                if (currentPinInput.length > 0) {
+                    currentPinInput = currentPinInput.slice(0, -1);
+                    updatePinDisplay();
+                }
+            }
+            // Escape 键关闭弹窗
+            else if (e.key === "Escape") {
+                closeAuthModal();
+            }
+        }
+    });
 }
 
 // --- Canvas 烟花碎屑动画 ---
@@ -1022,4 +1229,83 @@ function updateParticles() {
     }
     
     requestAnimationFrame(updateParticles);
+}
+
+// --- 渲染并自动计算概率百分比 ---
+function renderProbabilitySettings() {
+    const total = Object.values(starWeights).reduce((sum, w) => sum + w, 0);
+    
+    for (let star = 1; star <= 5; star++) {
+        const weight = starWeights[star];
+        const slider = document.getElementById(`weight-slider-${star}`);
+        const numInput = document.getElementById(`weight-num-${star}`);
+        const percentSpan = document.getElementById(`prob-percent-${star}`);
+        
+        if (slider) slider.value = weight;
+        if (numInput) numInput.value = weight;
+        
+        const percent = total > 0 ? ((weight / total) * 100).toFixed(1) : 0;
+        if (percentSpan) percentSpan.innerText = `${percent}%`;
+    }
+}
+
+// 绑定全局事件响应滑动条拖动 (双向同步)
+window.onWeightSliderChange = function(star, val) {
+    const numVal = parseInt(val) || 0;
+    const numInput = document.getElementById(`weight-num-${star}`);
+    if (numInput) numInput.value = numVal;
+    
+    starWeights[star] = numVal;
+    renderProbabilitySettings();
+};
+
+window.onWeightNumChange = function(star, val) {
+    let numVal = parseInt(val) || 0;
+    if (numVal < 0) numVal = 0;
+    if (numVal > 999) numVal = 999; // 设定限制防溢出
+    
+    const slider = document.getElementById(`weight-slider-${star}`);
+    if (slider) slider.value = Math.min(numVal, 100);
+    
+    starWeights[star] = numVal;
+    renderProbabilitySettings();
+};
+
+// 保存概率并双写同步到云端
+function saveWeights() {
+    closeDevModal();
+    updateSyncStatus("syncing");
+    
+    syncToCloud("save_weights", starWeights).then(success => {
+        if (success) {
+            alert("抽签概率配置已成功保存并同步至云端！");
+        } else {
+            alert("同步配置至云端失败，请检查网络连接！");
+        }
+    });
+}
+
+// --- 预加载奖池宝可梦图片，实现 0 毫秒秒开 ---
+let preloadedImages = {};
+function preloadRewardImages() {
+    if (!rewardPool || rewardPool.length === 0) return;
+    
+    rewardPool.forEach(item => {
+        const pokeId = item.pokemonId || 25;
+        
+        // 1. 预载高清原画
+        if (!preloadedImages[pokeId]) {
+            const img = new Image();
+            img.src = `${POKE_SPRITE_CDN}/other/official-artwork/${pokeId}.png`;
+            preloadedImages[pokeId] = img;
+        }
+        
+        // 2. 预载微缩头像
+        const avatarKey = `avatar-${pokeId}`;
+        if (!preloadedImages[avatarKey]) {
+            const avatarImg = new Image();
+            avatarImg.src = `${POKE_SPRITE_CDN}/${pokeId}.png`;
+            preloadedImages[avatarKey] = avatarImg;
+        }
+    });
 }
