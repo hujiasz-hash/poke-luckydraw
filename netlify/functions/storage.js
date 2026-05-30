@@ -14,8 +14,11 @@ const DEFAULT_REWARDS = [
 const DEFAULT_WEIGHTS = { "1": 40, "2": 30, "3": 20, "4": 10, "5": 5 };
 
 export default async (req, context) => {
-    // 实例化一个专属于宝可梦抽签的 store
-    const store = getStore("pokemon-luckydraw-store");
+    // 实例化一个专属于宝可梦抽签的 store，并开启强一致性，解决边缘网络最终一致性缓存导致的数据丢失和状态回滚问题
+    const store = getStore({
+        name: "pokemon-luckydraw-store",
+        consistency: "strong"
+    });
     const method = req.method;
 
     // 辅助方法：统一读取并合并当前状态
