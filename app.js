@@ -66,6 +66,13 @@ const POKEMON_FLAVORS = {
     52: "喵喵跳起来摇了摇额头上的金币，叮当一声，好运财宝滚落到了你的怀里！",
 };
 
+// 自动生成话术的可选后缀
+const POKEMON_ACTIONS = [
+    "的庇护", "的神秘守护", "的幸运祝福", "的治愈之光", "的祈愿", 
+    "的友情礼物", "的勇气鼓舞", "的超级召唤", "的星光闪耀", "的念力冲击",
+    "的爱心闪光", "的阳光普照", "的深海洗礼", "的烈火洗礼", "的雷电活力"
+];
+
 // --- 全局状态变量 ---
 let rewardPool = [];
 let drawRecords = [];
@@ -846,9 +853,10 @@ function deleteEditingReward(index) {
 }
 
 function addEditingReward() {
+    const randomAction = POKEMON_ACTIONS[Math.floor(Math.random() * POKEMON_ACTIONS.length)];
     editingRewards.push({
         id: Date.now(),
-        text: "",
+        text: `皮卡丘${randomAction}：`,
         star: 1,
         pokemonId: 25,
         pokemonName: "皮卡丘"
@@ -923,6 +931,16 @@ function selectPokemonForActiveRow(id, name) {
     if (activeEditingRowIndex !== -1 && editingRewards[activeEditingRowIndex]) {
         editingRewards[activeEditingRowIndex].pokemonId = id;
         editingRewards[activeEditingRowIndex].pokemonName = name;
+        
+        // 如果文本为空，或者只包含宝可梦的默认前缀话术，我们就用新宝可梦名字和随机话术替换它
+        const currentText = editingRewards[activeEditingRowIndex].text.trim();
+        const isDefaultTemplate = currentText === "" || currentText.endsWith("：") || POKEMON_ACTIONS.some(act => currentText.includes(act));
+        
+        if (isDefaultTemplate) {
+            const randomAction = POKEMON_ACTIONS[Math.floor(Math.random() * POKEMON_ACTIONS.length)];
+            editingRewards[activeEditingRowIndex].text = `${name}${randomAction}：`;
+        }
+        
         renderRewardsEditor();
     }
     closePokePicker();
