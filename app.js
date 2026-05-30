@@ -1002,61 +1002,64 @@ function resetRewardPool() {
     }
 }
 
-// 数据配置导出
-function exportConfig() {
-    const jsonStr = JSON.stringify(rewardPool, null, 2);
-    const textarea = document.getElementById("sync-textarea");
-    textarea.value = jsonStr;
+// 导入 JSON 配置文件到编辑器
+function handleFileImport(e) {
+    const file = e.target.files[0];
+    if (!file) return;
     
-    navigator.clipboard.writeText(jsonStr).then(() => {
-        alert("当前配置已成功导出并自动复制到剪贴板！您可以发送到其他设备导入同步。");
-    }).catch(err => {
-        // 浏览器不支持 Clipboard 降级方案
-        textarea.select();
-        alert("当前配置已成功导出，请手动复制文本框中的配置数据进行同步。");
-    });
-}
-
-// 数据配置导入
-function importConfig() {
-    const textarea = document.getElementById("sync-textarea");
-    const rawData = textarea.value.trim();
-    if (!rawData) {
-        alert("请先粘贴需要导入的 JSON 配置数据！");
-        return;
-    }
-    
-    try {
-        const parsed = JSON.parse(rawData);
-        if (!Array.isArray(parsed)) {
-            throw new Error("配置数据必须是 JSON 数组");
-        }
-        
-        // 验证基本属性
-        const valid = parsed.every(item => {
-            return item.text !== undefined && item.star !== undefined && item.pokemonId !== undefined;
-        });
-        
-        if (!valid) {
-            throw new Error("数据项格式错误，必须包含 text, star 和 pokemonId 等属性");
-        }
-        
-        if (confirm("导入配置将彻底覆写现有的奖池配置，此操作不可逆！确认要导入吗？")) {
-            rewardPool = parsed;
-            localStorage.setItem("pokemon_rewards", JSON.stringify(rewardPool));
-            renderRewardPoolStatus();
+    const reader = new FileReader();
+    reader.onload = function(event) {
+        try {
+            const rawData = event.target.result.trim();
+            const parsed = JSON.parse(rawData);
             
-            // 同步更新编辑器
-            editingRewards = JSON.parse(JSON.stringify(rewardPool));
-            renderRewardsEditor();
+            if (!Array.isArray(parsed)) {
+                throw new Error("配置数据格式不正确，必须是一个包含奖券对象的 JSON 数组！");
+            }
             
-            alert("配置数据导入成功并已应用！");
-            textarea.value = "";
-            switchTab("tab-rewards");
+            // 校验格式并填充缺失的属性
+            const validated = parsed.map((item, index) => {
+                if (typeof item !== "object" || item === null) {
+                    throw new Error(`第 ${index + 1} 项数据格式无效！`);
+                }
+                if (!item.text || typeof item.text !== "string" || !item.text.trim()) {
+                    throw new Error(`第 ${index + 1} 项的奖励内容 (text) 不能为空！`);
+                }
+                
+                const star = parseInt(item.star) || 1;
+                if (star < 1 || star > 5) {
+                    throw new Error(`第 ${index + 1} 项的稀有星级 (star) 必须在 1-5 之间！`);
+                }
+                
+                let pokemonId = parseInt(item.pokemonId) || 25;
+                let pokemonName = item.pokemonName || POKEMON_NAMES[pokemonId - 1] || "皮卡丘";
+                
+                return {
+                    id: item.id || (Date.now() + index),
+                    text: item.text.trim(),
+                    star: star,
+                    pokemonId: pokemonId,
+                    pokemonName: pokemonName
+                };
+            });
+            
+            if (confirm(`成功解析了 ${validated.length} 个奖项配置！\n是否要将它们导入到当前编辑器中？\n\n（注意：这会覆盖你目前在编辑器里编辑的临时配置。请在导入后点击下方的“保存并生效”进行保存并同步云端）`)) {
+                editingRewards = validated;
+                renderRewardsEditor();
+                
+                // 自动滚动到编辑区顶部
+                const container = document.getElementById("rewards-list-editor");
+                if (container) container.scrollTop = 0;
+            }
+            
+        } catch (err) {
+            alert(`导入失败：${err.message}\n请确保上传的是本系统支持的标准 JSON 配置文件！`);
+        } finally {
+            // 清空 value 使得同一文件可以多次导入触发 change 事件
+            e.target.value = "";
         }
-    } catch (e) {
-        alert(`导入失败：${e.message}\n请确保粘贴的是由本系统导出的完整 JSON 配置数据。`);
-    }
+    };
+    reader.readAsText(file);
 }
 
 // 修改安全密码
@@ -1110,6 +1113,16 @@ function setupEventListeners() {
     document.getElementById("save-pool-btn").addEventListener("click", saveRewardPool);
     document.getElementById("reset-pool-btn").addEventListener("click", resetRewardPool);
     document.getElementById("save-password-btn").addEventListener("click", saveNewPassword);
+    
+    // 导入 JSON 配置文件
+    const importBtn = document.getElementById("import-file-btn");
+    const importInput = document.getElementById("import-file-input");
+    if (importBtn && importInput) {
+        importBtn.addEventListener("click", () => {
+            importInput.click();
+        });
+        importInput.addEventListener("change", handleFileImport);
+    }
     
     // 5. 奖励可视化编辑器新增按钮
     document.getElementById("add-reward-btn").addEventListener("click", addEditingReward);
