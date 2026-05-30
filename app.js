@@ -805,11 +805,11 @@ function renderRewardsEditor() {
                 </div>
                 <div class="col-star">
                     <select class="reward-input-star" onchange="updateEditingRewardStar(${index}, this.value)">
-                        <option value="1" ${reward.star == 1 ? 'selected' : ''}>★ 1星 (40%)</option>
-                        <option value="2" ${reward.star == 2 ? 'selected' : ''}>★★ 2星 (30%)</option>
-                        <option value="3" ${reward.star == 3 ? 'selected' : ''}>★★★ 3星 (20%)</option>
-                        <option value="4" ${reward.star == 4 ? 'selected' : ''}>★★★★ 4星 (10%)</option>
-                        <option value="5" ${reward.star == 5 ? 'selected' : ''}>★★★★★ 5星 (5%)</option>
+                        <option value="1" ${reward.star == 1 ? 'selected' : ''}>★ 1星</option>
+                        <option value="2" ${reward.star == 2 ? 'selected' : ''}>★★ 2星</option>
+                        <option value="3" ${reward.star == 3 ? 'selected' : ''}>★★★ 3星</option>
+                        <option value="4" ${reward.star == 4 ? 'selected' : ''}>★★★★ 4星</option>
+                        <option value="5" ${reward.star == 5 ? 'selected' : ''}>★★★★★ 5星</option>
                     </select>
                 </div>
                 <div class="col-poke">
