@@ -1,0 +1,11 @@
+version: '3.8'
+
+services:
+  pokemon-luckydraw:
+    build: .
+    container_name: pokemon-luckydraw
+    ports:
+      - "8888:8888" # 将 NAS 上的 8888 端口映射到容器内
+    volumes:
+      - ./scratch:/app/scratch # 将本地的 scratch 目录挂载进容器，持久化保存密码、记录和奖池数据
+    restart: always
