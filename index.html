@@ -77,7 +77,16 @@
             <section class="records-section card animate-slide-up" style="animation-delay: 0.1s;">
                 <div class="section-header">
                     <h2><i class="fa-solid fa-list-check"></i> 中奖荣誉榜</h2>
-                    <span id="record-count" class="badge">0 条未核销</span>
+                    <div style="display: flex; gap: 8px; align-items: center;">
+                        <button id="import-records-btn" class="btn btn-outline btn-sm" style="padding: 4px 8px; font-size: 0.75rem;" title="导入中奖记录">
+                            <i class="fa-solid fa-file-import"></i> 导入
+                        </button>
+                        <input type="file" id="import-records-input" accept=".txt,.json" style="display: none;">
+                        <button id="export-records-btn" class="btn btn-outline btn-sm" style="padding: 4px 8px; font-size: 0.75rem;" title="导出中奖记录">
+                            <i class="fa-solid fa-file-export"></i> 导出
+                        </button>
+                        <span id="record-count" class="badge">0 条未核销</span>
+                    </div>
                 </div>
 
                 <div class="records-list-wrapper">

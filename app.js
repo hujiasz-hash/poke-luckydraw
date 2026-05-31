@@ -394,6 +394,18 @@ function renderRecords() {
     const unredeemedCount = drawRecords.length;
     badge.innerText = `${unredeemedCount} 条未核销`;
 
+    // 控制导出按钮启用/禁用状态
+    const exportBtn = document.getElementById("export-records-btn");
+    if (exportBtn) {
+        if (unredeemedCount === 0) {
+            exportBtn.disabled = true;
+            exportBtn.style.opacity = "0.5";
+        } else {
+            exportBtn.disabled = false;
+            exportBtn.style.opacity = "1";
+        }
+    }
+
     if (unredeemedCount === 0) {
         actionsBar.style.display = "none";
         listContainer.innerHTML = `
@@ -1156,6 +1168,24 @@ function setupEventListeners() {
     document.getElementById("draw-btn").addEventListener("click", triggerLuckyDraw);
     document.getElementById("close-result-btn").addEventListener("click", closeResultModal);
     
+    // 导出中奖记录
+    const exportBtn = document.getElementById("export-records-btn");
+    if (exportBtn) {
+        exportBtn.addEventListener("click", exportDrawRecords);
+    }
+    
+    // 导入中奖记录
+    const importRecordsBtn = document.getElementById("import-records-btn");
+    const importRecordsInput = document.getElementById("import-records-input");
+    if (importRecordsBtn && importRecordsInput) {
+        importRecordsBtn.addEventListener("click", () => {
+            openAuthModal(() => {
+                importRecordsInput.click();
+            });
+        });
+        importRecordsInput.addEventListener("change", handleRecordsImport);
+    }
+    
     // 2. 开发者后台入口
     document.getElementById("dev-mode-btn").addEventListener("click", () => {
         openAuthModal(openDevModal);
@@ -1533,4 +1563,124 @@ function getBeijingTimeStrLocal() {
     
     const pad = num => num.toString().padStart(2, '0');
     return `${bjDate.getFullYear()}年${pad(bjDate.getMonth()+1)}月${pad(bjDate.getDate())}日 ${pad(bjDate.getHours())}:${pad(bjDate.getMinutes())}`;
+}
+
+// 导出中奖荣誉榜记录到本地文本文件
+function exportDrawRecords() {
+    if (!drawRecords || drawRecords.length === 0) {
+        alert("当前暂无中奖记录，无法导出！");
+        return;
+    }
+    
+    // 生成格式化的文本排版
+    let textContent = `=========================================\n`;
+    textContent += `       宝可梦中奖荣誉榜历史记录\n`;
+    textContent += `=========================================\n`;
+    textContent += `导出时间: ${getBeijingTimeStrLocal()}\n`;
+    textContent += `记录总数: ${drawRecords.length} 条\n\n`;
+    
+    drawRecords.forEach((r, index) => {
+        textContent += `${index + 1}. [${r.time}] 获得奖励: 【${r.reward}】 (${r.star}星级 - 宝可梦: ${r.pokemonName})\n`;
+    });
+    
+    // 触发浏览器下载文本文件
+    const blob = new Blob([textContent], { type: "text/plain;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    const date = new Date();
+    const dateStr = `${date.getFullYear()}${String(date.getMonth()+1).padStart(2, '0')}${String(date.getDate()).padStart(2, '0')}`;
+    a.href = url;
+    a.download = `宝可梦中奖记录_${dateStr}.txt`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+}
+
+// 导入中奖荣誉榜记录追加到当前的记录列表中
+function handleRecordsImport(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+    
+    const reader = new FileReader();
+    reader.onload = async function(event) {
+        try {
+            const rawData = event.target.result.trim();
+            let importedRecords = [];
+            
+            // 1. 如果导入的是 .json 格式的数据
+            if (file.name.endsWith('.json')) {
+                const parsed = JSON.parse(rawData);
+                if (!Array.isArray(parsed)) {
+                    throw new Error("配置数据格式不正确，必须是一个包含中奖记录对象的 JSON 数组！");
+                }
+                importedRecords = parsed.map(item => {
+                    return {
+                        id: item.id || Date.now() + Math.random(),
+                        time: item.time || getBeijingTimeStrLocal(),
+                        reward: item.reward || item.text || "未知奖励",
+                        pokemonId: parseInt(item.pokemonId) || 25,
+                        pokemonName: item.pokemonName || "皮卡丘",
+                        star: parseInt(item.star) || 1
+                    };
+                });
+            } 
+            // 2. 如果导入的是 .txt 格式的可读文本，则使用正则表达式进行按行提取解析
+            else {
+                const lines = rawData.split('\n');
+                // 正则模式匹配: 1. [时间] 获得奖励: 【内容】 (星级 - 宝可梦: 名字)
+                const regex = /\d+\.\s*\[(.*?)\]\s*获得奖励:\s*【(.*?)】\s*\((.*?)\s*星级\s*-\s*宝可梦:\s*(.*?)\)/;
+                
+                lines.forEach((line, index) => {
+                    const match = line.match(regex);
+                    if (match) {
+                        const time = match[1].trim();
+                        const reward = match[2].trim();
+                        const star = parseInt(match[3]) || 1;
+                        const pokemonName = match[4].trim();
+                        
+                        // 从宝可梦名称反查对应的宝可梦 ID
+                        let pokemonId = POKEMON_NAMES.indexOf(pokemonName) + 1;
+                        if (pokemonId <= 0) pokemonId = 25; // 默认皮卡丘
+                        
+                        importedRecords.push({
+                            id: Date.now() + index + Math.floor(Math.random() * 1000),
+                            time: time,
+                            reward: reward,
+                            pokemonId: pokemonId,
+                            pokemonName: pokemonName,
+                            star: star
+                        });
+                    }
+                });
+            }
+            
+            if (importedRecords.length === 0) {
+                throw new Error("未能识别出任何中奖记录！请确保文件由本系统导出且格式正确。");
+            }
+            
+            if (confirm(`成功解析了 ${importedRecords.length} 条历史中奖记录！\n是否要将它们追加到当前的荣誉榜中？`)) {
+                // 将导入的记录合并追加到现有记录的最前方 (按照时间顺序)
+                drawRecords = importedRecords.concat(drawRecords);
+                
+                // 重新渲染列表及状态
+                renderRecords();
+                
+                // 自动同步至云端/本地存储
+                updateSyncStatus("syncing");
+                const success = await syncToCloud("redeem_records", drawRecords);
+                if (success) {
+                    alert("中奖记录已成功导入并同步至云端！");
+                } else {
+                    alert("本地导入成功，但云端数据同步失败，请检查您的网络连接！");
+                }
+            }
+            
+        } catch (err) {
+            alert(`导入失败：${err.message}\n请选择正确的导出文件进行恢复。`);
+        } finally {
+            e.target.value = "";
+        }
+    };
+    reader.readAsText(file);
 }

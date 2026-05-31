@@ -1,0 +1,72 @@
+[
+  {
+    "id": 1,
+    "text": "一元",
+    "star": 1,
+    "pokemonId": 16,
+    "pokemonName": "波波"
+  },
+  {
+    "id": 2,
+    "text": "两元",
+    "star": 1,
+    "pokemonId": 10,
+    "pokemonName": "绿毛虫"
+  },
+  {
+    "id": 3,
+    "text": "三元",
+    "star": 2,
+    "pokemonId": 4,
+    "pokemonName": "小火龙"
+  },
+  {
+    "id": 4,
+    "text": "五元",
+    "star": 2,
+    "pokemonId": 52,
+    "pokemonName": "喵喵"
+  },
+  {
+    "id": 5,
+    "text": "十元",
+    "star": 3,
+    "pokemonId": 53,
+    "pokemonName": "猫老大"
+  },
+  {
+    "id": 6,
+    "text": "吃啥我做主一次",
+    "star": 3,
+    "pokemonId": 143,
+    "pokemonName": "卡比兽"
+  },
+  {
+    "id": 7,
+    "text": "免做一项作业",
+    "star": 4,
+    "pokemonId": 113,
+    "pokemonName": "吉利蛋"
+  },
+  {
+    "id": 8,
+    "text": "免除惩罚一次",
+    "star": 4,
+    "pokemonId": 149,
+    "pokemonName": "快龙"
+  },
+  {
+    "id": 9,
+    "text": "妈妈睡前陪伴",
+    "star": 5,
+    "pokemonId": 151,
+    "pokemonName": "梦幻"
+  },
+  {
+    "id": 10,
+    "text": "半小时游戏",
+    "star": 5,
+    "pokemonId": 150,
+    "pokemonName": "超梦"
+  }
+]
