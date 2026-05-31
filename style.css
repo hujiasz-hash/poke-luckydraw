@@ -953,6 +953,7 @@ body {
 .pool-actions {
     display: flex;
     justify-content: flex-end;
+    flex-wrap: wrap; /* 允许在屏幕宽度不足时自动换行排版 */
     gap: 12px;
     margin-top: 10px;
 }
@@ -1896,10 +1897,15 @@ body {
 
 /* UI 按钮文字溢出修复与移动端优化 */
 .btn {
-    white-space: normal;  /* 允许按钮内文字折行 */
-    word-wrap: break-word;
+    white-space: nowrap;   /* 按钮内的文字通常不需要内部换行，应保持单行展示 */
+    word-wrap: normal;
     text-align: center;
-    flex-wrap: wrap;       /* 允许内容在多元素时换行 */
+    flex-wrap: nowrap;
+    padding: 8px 16px;     /* 提供充实且适度的默认 padding，增加文字呼吸感 */
+    font-size: 0.88rem;    /* 适度规范字号 */
+    min-height: 38px;
+    box-sizing: border-box;
+    flex-shrink: 0;        /* 强制防止按钮在 Flex 弹性布局下被挤压变形 */
 }
 
 @media (max-width: 576px) {
