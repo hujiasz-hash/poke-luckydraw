@@ -1,70 +1,70 @@
 [
   {
     "id": 1,
-    "text": "一元",
+    "text": "波波的友情礼物：获得1元",
     "star": 1,
     "pokemonId": 16,
     "pokemonName": "波波"
   },
   {
     "id": 2,
-    "text": "两元",
+    "text": "绿毛虫的勇气鼓舞：获得2元",
     "star": 1,
     "pokemonId": 10,
     "pokemonName": "绿毛虫"
   },
   {
     "id": 3,
-    "text": "三元",
+    "text": "小火龙的火焰热情：获得3元",
     "star": 2,
     "pokemonId": 4,
     "pokemonName": "小火龙"
   },
   {
     "id": 4,
-    "text": "五元",
+    "text": "喵喵的聚宝功：获得5元",
     "star": 2,
     "pokemonId": 52,
     "pokemonName": "喵喵"
   },
   {
     "id": 5,
-    "text": "十元",
+    "text": "猫老大的聚宝功：获得10元",
     "star": 3,
     "pokemonId": 53,
     "pokemonName": "猫老大"
   },
   {
     "id": 6,
-    "text": "吃啥我做主一次",
+    "text": "卡比兽的大饱口福：吃啥我做主一次",
     "star": 3,
     "pokemonId": 143,
     "pokemonName": "卡比兽"
   },
   {
     "id": 7,
-    "text": "免做一项作业",
+    "text": "吉利蛋的治愈之光：免做一项作业",
     "star": 4,
     "pokemonId": 113,
     "pokemonName": "吉利蛋"
   },
   {
     "id": 8,
-    "text": "免除惩罚一次",
+    "text": "快龙的神秘守护：免除惩罚一次",
     "star": 4,
     "pokemonId": 149,
     "pokemonName": "快龙"
   },
   {
     "id": 9,
-    "text": "妈妈睡前陪伴",
+    "text": "梦幻的星光闪耀：妈妈睡前陪伴",
     "star": 5,
     "pokemonId": 151,
     "pokemonName": "梦幻"
   },
   {
     "id": 10,
-    "text": "半小时游戏",
+    "text": "超梦的精神强念：半小时游戏",
     "star": 5,
     "pokemonId": 150,
     "pokemonName": "超梦"
