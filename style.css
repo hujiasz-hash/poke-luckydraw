@@ -1973,6 +1973,7 @@ body {
     display: flex;
     flex-direction: column;
     gap: 6px;
+    min-width: 0; /* 允许子元素在 Flexbox 容器内正常收缩，防止被内部长文本撑出框外 */
 }
 
 .records-add-form .form-group label {
@@ -1983,6 +1984,8 @@ body {
 
 .records-add-form select,
 .records-add-form input {
+    width: 100%;
+    box-sizing: border-box; /* 包含 padding 边框，确保宽度 100% 不会溢出 */
     background: rgba(0, 0, 0, 0.35);
     border: 1px solid rgba(255, 255, 255, 0.12);
     border-radius: 10px;
