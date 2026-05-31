@@ -79,6 +79,9 @@ let drawRecords = [];
 let parentPin = DEFAULT_PIN;
 let starWeights = { 1: 40, 2: 30, 3: 20, 4: 10, 5: 5 };
 
+// 开发者后台：手动补发奖券时选中的宝可梦
+let manualSelectedPokemon = { id: 25, name: "皮卡丘" };
+
 // 待执行的安全敏感操作回调（输入密码成功后执行）
 let pendingSecureAction = null; 
 
@@ -406,12 +409,12 @@ function renderRecords() {
     actionsBar.style.display = "flex";
     updateSelectedCount();
 
-    // 渲染每一条记录
+    // 渲染每一条记录 (点击整行展示精美卡牌详情，点击 label 勾选框阻止冒泡用于核销)
     listContainer.innerHTML = drawRecords.map(record => {
         const spriteUrl = record.pokemonId ? `${POKE_SPRITE_CDN}/${record.pokemonId}.png` : '';
         const starsHtml = record.star ? `<span class="star-rating">${'★'.repeat(record.star)}</span>` : '';
         return `
-            <div class="record-item" data-id="${record.id}" onclick="toggleRecordSelect(this)">
+            <div class="record-item" data-id="${record.id}" onclick="showRecordCard('${record.id}')">
                 <label class="checkbox-container" onclick="event.stopPropagation()">
                     <input type="checkbox" value="${record.id}" onchange="onCheckboxChange(this)">
                     <span class="checkmark"></span>
@@ -427,6 +430,22 @@ function renderRecords() {
             </div>
         `;
     }).join("");
+}
+
+// 点击记录显示相应的卡片弹窗
+function showRecordCard(recordId) {
+    const record = drawRecords.find(r => String(r.id) === String(recordId));
+    if (!record) return;
+    
+    // 拼装成符合 showResultModal 输入的结构
+    const rewardObj = {
+        text: record.reward,
+        pokemonId: record.pokemonId,
+        pokemonName: record.pokemonName,
+        star: record.star
+    };
+    
+    showResultModal(rewardObj);
 }
 
 // HTML 转义防注入
@@ -764,6 +783,24 @@ function openDevModal() {
     // 填充密码输入框
     document.getElementById("password-input").value = "";
     document.getElementById("password-confirm-input").value = "";
+
+    // 渲染手动管理记录的下拉选项
+    const selectEl = document.getElementById("manual-reward-select");
+    if (selectEl) {
+        selectEl.innerHTML = '<option value="">-- 手动输入奖励内容 --</option>' + 
+            rewardPool.map(r => `<option value="${r.id}">${r.text} (${r.star}星级)</option>`).join("");
+    }
+    // 重置手动添加表单的状态
+    const manualInput = document.getElementById("manual-reward-text");
+    if (manualInput) manualInput.value = "";
+    manualSelectedPokemon = { id: 25, name: "皮卡丘" };
+    const manualPokeName = document.getElementById("manual-poke-name");
+    if (manualPokeName) manualPokeName.innerText = "皮卡丘";
+    const manualPokeImg = document.getElementById("manual-poke-img");
+    if (manualPokeImg) manualPokeImg.src = `${POKE_SPRITE_CDN}/25.png`;
+
+    // 渲染后台记录管理列表
+    renderRecordsManager();
     
     // 默认展示第一个 Tab
     switchTab("tab-rewards");
@@ -892,7 +929,13 @@ function initPokeGrid() {
 
 function openPokePicker(index) {
     activeEditingRowIndex = index;
-    const currentPokeId = editingRewards[index].pokemonId;
+    
+    let currentPokeId = 25; // 默认皮卡丘
+    if (index === "manual") {
+        currentPokeId = manualSelectedPokemon.id;
+    } else if (index !== -1 && editingRewards[index]) {
+        currentPokeId = editingRewards[index].pokemonId;
+    }
     
     // 清除原有选中，高亮当前已选中的宝可梦
     const items = document.querySelectorAll(".poke-picker-item");
@@ -928,7 +971,13 @@ function closePokePicker() {
 }
 
 function selectPokemonForActiveRow(id, name) {
-    if (activeEditingRowIndex !== -1 && editingRewards[activeEditingRowIndex]) {
+    if (activeEditingRowIndex === "manual") {
+        manualSelectedPokemon = { id, name };
+        const manualPokeName = document.getElementById("manual-poke-name");
+        if (manualPokeName) manualPokeName.innerText = name;
+        const manualPokeImg = document.getElementById("manual-poke-img");
+        if (manualPokeImg) manualPokeImg.src = `${POKE_SPRITE_CDN}/${id}.png`;
+    } else if (activeEditingRowIndex !== -1 && editingRewards[activeEditingRowIndex]) {
         editingRewards[activeEditingRowIndex].pokemonId = id;
         editingRewards[activeEditingRowIndex].pokemonName = name;
         
@@ -945,6 +994,11 @@ function selectPokemonForActiveRow(id, name) {
     }
     closePokePicker();
 }
+
+// 唤起宝可梦选择器给后台手动记录补发使用
+window.openPokePickerForManual = function() {
+    openPokePicker("manual");
+};
 
 function setupPokeSearch() {
     const searchInput = document.getElementById("poke-search-input");
@@ -1122,6 +1176,12 @@ function setupEventListeners() {
             importInput.click();
         });
         importInput.addEventListener("change", handleFileImport);
+    }
+
+    // 后台手动补发确认按钮
+    const addManualBtn = document.getElementById("add-manual-record-btn");
+    if (addManualBtn) {
+        addManualBtn.addEventListener("click", addManualRecord);
     }
     
     // 5. 奖励可视化编辑器新增按钮
@@ -1339,4 +1399,132 @@ function preloadRewardImages() {
             preloadedImages[avatarKey] = avatarImg;
         }
     });
+}
+
+// --- 开发者后台：手动管理中奖记录列表渲染 ---
+function renderRecordsManager() {
+    const container = document.getElementById("records-list-manager");
+    if (!container) return;
+    
+    if (drawRecords.length === 0) {
+        container.innerHTML = `
+            <div style="text-align: center; padding: 20px; color: rgba(255,255,255,0.4); font-size: 0.85rem;">
+                当前暂无中奖记录。
+            </div>
+        `;
+        return;
+    }
+    
+    container.innerHTML = drawRecords.map(record => {
+        const spriteUrl = record.pokemonId ? `${POKE_SPRITE_CDN}/${record.pokemonId}.png` : '';
+        const starsHtml = record.star ? `<span style="color: var(--secondary-color); font-size: 0.75rem;">${'★'.repeat(record.star)}</span>` : '';
+        return `
+            <div class="editor-row" style="padding: 6px 12px; border-radius: 10px;">
+                <span style="flex: 1.2; font-size: 0.75rem; color: rgba(255,255,255,0.5); overflow: hidden; white-space: nowrap; text-overflow: ellipsis;">${record.time}</span>
+                <span style="flex: 2; font-size: 0.8rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: bold;" title="${escapeHTML(record.reward)}">${escapeHTML(record.reward)}</span>
+                <span style="flex: 1; display: flex; align-items: center;">${starsHtml}</span>
+                <span style="flex: 1.2; display: flex; align-items: center; gap: 4px; font-size: 0.75rem; color: rgba(255,255,255,0.85);">
+                    ${spriteUrl ? `<img src="${spriteUrl}" style="width: 20px; height: 20px; object-fit: contain;">` : ''}
+                    <span>${record.pokemonName}</span>
+                </span>
+                <span style="flex: 0.6; display: flex; justify-content: center; align-items: center;">
+                    <button class="delete-row-btn" onclick="deleteSingleRecord('${record.id}')" title="删除/核销该奖券" style="padding: 4px;">
+                        <i class="fa-solid fa-trash-can" style="font-size: 0.9rem;"></i>
+                    </button>
+                </span>
+            </div>
+        `;
+    }).join("");
+}
+
+// 联动填充选择的常备奖励
+window.onManualRewardSelectChange = function(rewardId) {
+    const textInput = document.getElementById("manual-reward-text");
+    const starSelect = document.getElementById("manual-reward-star");
+    
+    if (!rewardId) {
+        textInput.value = "";
+        return;
+    }
+    
+    const reward = rewardPool.find(r => String(r.id) === String(rewardId));
+    if (reward) {
+        textInput.value = reward.text;
+        starSelect.value = reward.star;
+        
+        // 联动宝可梦选择
+        manualSelectedPokemon = { id: reward.pokemonId, name: reward.pokemonName };
+        const manualPokeName = document.getElementById("manual-poke-name");
+        if (manualPokeName) manualPokeName.innerText = reward.pokemonName;
+        const manualPokeImg = document.getElementById("manual-poke-img");
+        if (manualPokeImg) manualPokeImg.src = `${POKE_SPRITE_CDN}/${reward.pokemonId}.png`;
+    }
+};
+
+// 确认手动补发奖券
+function addManualRecord() {
+    const text = document.getElementById("manual-reward-text").value.trim();
+    const star = parseInt(document.getElementById("manual-reward-star").value) || 1;
+    
+    if (!text) {
+        alert("请输入或选择奖励内容！");
+        return;
+    }
+    
+    const dateStr = getBeijingTimeStrLocal();
+    const newRecord = {
+        id: Date.now(),
+        time: dateStr,
+        reward: text,
+        pokemonId: manualSelectedPokemon.id,
+        pokemonName: manualSelectedPokemon.name,
+        star: star
+    };
+    
+    // 追加至荣誉榜最前端
+    drawRecords.unshift(newRecord);
+    
+    // 重置输入表单
+    document.getElementById("manual-reward-text").value = "";
+    document.getElementById("manual-reward-select").value = "";
+    
+    // 重新渲染相关页面模块
+    renderRecordsManager();
+    
+    // 强一致性同步至云端
+    syncToCloud("redeem_records", drawRecords).then(success => {
+        if (success) {
+            alert("已成功手动补发中奖记录并同步至云端！");
+        } else {
+            alert("本地补发成功，但同步至云端失败，请检查网络！");
+        }
+    });
+}
+
+// 开发者后台单条删除中奖记录
+window.deleteSingleRecord = function(recordId) {
+    if (confirm("确定要永久删除这一条中奖奖券记录吗？该操作将直接核销此券。")) {
+        drawRecords = drawRecords.filter(r => String(r.id) !== String(recordId));
+        renderRecordsManager();
+        
+        // 强一致性同步至云端
+        syncToCloud("redeem_records", drawRecords).then(success => {
+            if (success) {
+                alert("已成功核销删除该中奖记录并同步至云端！");
+            } else {
+                alert("本地删除成功，但同步至云端失败，请检查网络！");
+            }
+        });
+    }
+};
+
+// 前端本地东八区时间格式化
+function getBeijingTimeStrLocal() {
+    const d = new Date();
+    // 抹平时区差，计算北京时间
+    const utc = d.getTime() + (d.getTimezoneOffset() * 60000);
+    const bjDate = new Date(utc + (3600000 * 8));
+    
+    const pad = num => num.toString().padStart(2, '0');
+    return `${bjDate.getFullYear()}年${pad(bjDate.getMonth()+1)}月${pad(bjDate.getDate())}日 ${pad(bjDate.getHours())}:${pad(bjDate.getMinutes())}`;
 }

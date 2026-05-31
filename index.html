@@ -119,6 +119,7 @@
                 <!-- Tabs -->
                 <div class="tab-header">
                     <button class="tab-btn active" data-tab="tab-rewards">奖励池配置</button>
+                    <button class="tab-btn" data-tab="tab-records-manage">中奖记录管理</button>
                     <button class="tab-btn" data-tab="tab-probability">抽签概率设置</button>
                     <button class="tab-btn" data-tab="tab-settings">密码安全设置</button>
                 </div>
@@ -143,6 +144,65 @@
                         <input type="file" id="import-file-input" accept=".json" style="display: none;">
                         <button id="save-pool-btn" class="btn btn-primary"><i class="fa-solid fa-floppy-disk"></i> 保存并生效</button>
                         <button id="reset-pool-btn" class="btn btn-danger-outline"><i class="fa-solid fa-rotate-left"></i> 重置默认</button>
+                    </div>
+                </div>
+
+                <!-- Tab: Records Management -->
+                <div class="tab-content" id="tab-records-manage">
+                    <p class="section-desc">在这里手动补发（新增）中奖奖券，或者单独直接核销/删除已获得的中奖奖券。</p>
+                    
+                    <!-- 手动补发奖券表单 -->
+                    <div class="records-add-form">
+                        <h3><i class="fa-solid fa-circle-plus"></i> 手动补发中奖奖券</h3>
+                        <div class="form-row">
+                            <div class="form-group flex-2">
+                                <label for="manual-reward-select">选择奖池内现成奖励项：</label>
+                                <select id="manual-reward-select" onchange="onManualRewardSelectChange(this.value)">
+                                    <option value="">-- 手动输入奖励内容 --</option>
+                                    <!-- 动态填充 -->
+                                </select>
+                                <input type="text" id="manual-reward-text" placeholder="输入具体的奖励内容（如：皮卡丘的雷电活力：免做家务一次）" style="margin-top: 8px;">
+                            </div>
+                            <div class="form-group flex-1">
+                                <label for="manual-reward-star">中签稀有星级：</label>
+                                <select id="manual-reward-star">
+                                    <option value="1">★ 1星级 (常见)</option>
+                                    <option value="2">★★ 2星级 (稀有)</option>
+                                    <option value="3">★★★ 3星级 (史诗)</option>
+                                    <option value="4">★★★★ 4星级 (传奇)</option>
+                                    <option value="5">★★★★★ 5星级 (神话)</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="form-row" style="margin-top: 12px; align-items: flex-end;">
+                            <div class="form-group flex-2">
+                                <label>绑定召唤宝可梦：</label>
+                                <button id="manual-poke-picker-btn" class="btn btn-outline" onclick="openPokePickerForManual()" style="height: 42px; display: flex; align-items: center; justify-content: center; gap: 8px;">
+                                    <img id="manual-poke-img" src="https://gcore.jsdelivr.net/gh/PokeAPI/sprites@master/sprites/pokemon/25.png" class="poke-mini-icon" style="width: 32px; height: 32px;">
+                                    <span id="manual-poke-name" style="font-weight: bold; color: var(--text-color);">皮卡丘</span>
+                                </button>
+                            </div>
+                            <div class="form-group flex-1">
+                                <button id="add-manual-record-btn" class="btn btn-primary" style="height: 42px; width: 100%; display: flex; align-items: center; justify-content: center; gap: 8px;">
+                                    <i class="fa-solid fa-paper-plane"></i> 确认补发
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 手动记录管理列表 -->
+                    <div class="records-manage-list-container" style="margin-top: 24px;">
+                        <h3><i class="fa-solid fa-list-check"></i> 当前荣誉榜记录 (单条快捷删除/核销)</h3>
+                        <div class="editor-header">
+                            <span class="col-time" style="flex: 1.2;">获得时间</span>
+                            <span class="col-text" style="flex: 2;">奖励内容</span>
+                            <span class="col-star" style="flex: 1;">星级</span>
+                            <span class="col-poke" style="flex: 1.2;">中奖精灵</span>
+                            <span class="col-action" style="flex: 0.6;">操作</span>
+                        </div>
+                        <div id="records-list-manager" class="rewards-editor-container" style="max-height: 220px; overflow-y: auto;">
+                            <!-- 动态渲染记录行 -->
+                        </div>
                     </div>
                 </div>
 

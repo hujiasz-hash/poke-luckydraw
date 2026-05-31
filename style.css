@@ -1940,3 +1940,84 @@ body {
     overflow: hidden;
     justify-content: center;
 }
+
+/* ==========================================================================
+   后台记录管理 Tab 样式 (Records Management Tab Styles)
+   ========================================================================== */
+.records-add-form {
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 18px;
+    padding: 18px;
+    margin-bottom: 24px;
+}
+
+.records-add-form h3, 
+.records-manage-list-container h3 {
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: var(--secondary-color);
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.records-add-form .form-row {
+    display: flex;
+    gap: 15px;
+    width: 100%;
+}
+
+.records-add-form .form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.records-add-form .form-group label {
+    font-size: 0.78rem;
+    font-weight: 700;
+    color: rgba(255, 255, 255, 0.6);
+}
+
+.records-add-form select,
+.records-add-form input {
+    background: rgba(0, 0, 0, 0.35);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 10px;
+    color: var(--white);
+    padding: 8px 12px;
+    font-size: 0.85rem;
+    outline: none;
+    transition: all 0.25s;
+}
+
+.records-add-form select:focus,
+.records-add-form input:focus {
+    border-color: var(--secondary-color);
+}
+
+.records-add-form select {
+    cursor: pointer;
+}
+
+.records-add-form .flex-1 { flex: 1; }
+.records-add-form .flex-2 { flex: 2; }
+
+/* 窄屏响应式处理 */
+@media (max-width: 600px) {
+    .records-add-form .form-row {
+        flex-direction: column;
+        gap: 12px;
+    }
+    
+    .records-add-form .flex-1,
+    .records-add-form .flex-2 {
+        width: 100%;
+    }
+    
+    .records-add-form #add-manual-record-btn {
+        margin-top: 6px;
+    }
+}
