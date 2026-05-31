@@ -445,7 +445,7 @@ function showRecordCard(recordId) {
         star: record.star
     };
     
-    showResultModal(rewardObj);
+    showResultModal(rewardObj, true);
 }
 
 // HTML 转义防注入
@@ -662,12 +662,18 @@ function padZero(num) {
 }
 
 // --- 弹出中奖结果模态框 ---
-function showResultModal(winReward) {
+function showResultModal(winReward, isViewing = false) {
     const resultModal = document.getElementById("result-modal");
     const rewardVal = document.getElementById("reward-result-value");
     const pokeImg = document.getElementById("reward-poke-img");
     const loader = resultModal.querySelector(".image-loader");
     const flavorText = document.getElementById("pokemon-flavor-desc");
+    
+    // 动态调整卡片底部的按钮文字，如果是查看历史卡片则显示"关闭"，如果是抽中新奖励则显示"放入背包"
+    const closeBtn = document.getElementById("close-result-btn");
+    if (closeBtn) {
+        closeBtn.innerText = isViewing ? "关闭" : "太棒了，收入背包！";
+    }
     
     // 立即清除并隐藏上一张图片的 src，显示加载动画，防止连抽时短暂显示旧图片
     if (pokeImg) {
